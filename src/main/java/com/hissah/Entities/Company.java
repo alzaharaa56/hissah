@@ -10,8 +10,6 @@ import lombok.Data;
 public class Company {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @OneToOne @JoinColumn(name = "user_id", nullable = false)
-    private User user;
     private String legalName;
     private String tradingName;
     @Enumerated(EnumType.STRING)
@@ -23,4 +21,6 @@ public class Company {
     private String description;
     @Enumerated(EnumType.STRING)
     private VerificationStatus verificationStatus;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 }
