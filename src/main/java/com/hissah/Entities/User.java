@@ -3,10 +3,12 @@ package com.hissah.Entities;
 import com.hissah.Enums.AccountStatus;
 import com.hissah.Enums.Role;
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Data
 @Table(name = "users")
 public class User {
     @Id
