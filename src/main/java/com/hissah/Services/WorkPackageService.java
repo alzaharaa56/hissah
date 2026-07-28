@@ -1,9 +1,9 @@
 package com.hissah.Services;
 
-import com.hissah.DTOs.Requests.WorkPackageRequestDTO;
-import com.hissah.DTOs.Requests.WorkPackageSearchRequestDTO;
-import com.hissah.DTOs.Responses.WorkPackageResponseDTO;
-import com.hissah.DTOs.Responses.WorkPackageSummaryResponseDTO;
+import com.hissah.DTO.Requests.WorkPackageRequestDTO;
+import com.hissah.DTO.Requests.WorkPackageSearchRequestDTO;
+import com.hissah.DTO.Responses.WorkPackageResponseDTO;
+import com.hissah.DTO.Responses.WorkPackageSummaryResponseDTO;
 import org.springframework.data.domain.Page;
 
 import java.util.List;

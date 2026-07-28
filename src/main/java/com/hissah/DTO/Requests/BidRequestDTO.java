@@ -1,6 +1,6 @@
 package com.hissah.DTOs.Requests;
 
-import com.hissah.enums.DocumentType;
+import com.hissah.Enums.DocumentType;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;

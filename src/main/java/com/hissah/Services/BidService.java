@@ -1,9 +1,9 @@
 package com.hissah.Services;
 
-import com.hissah.DTOs.Requests.BidDecisionRequestDTO;
-import com.hissah.DTOs.Requests.BidRequestDTO;
-import com.hissah.DTOs.Responses.BidComparisonResponseDTO;
-import com.hissah.DTOs.Responses.BidResponseDTO;
+import com.hissah.DTO.Requests.BidDecisionRequestDTO;
+import com.hissah.DTO.Requests.BidRequestDTO;
+import com.hissah.DTO.Responses.BidComparisonResponseDTO;
+import com.hissah.DTO.Responses.BidResponseDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

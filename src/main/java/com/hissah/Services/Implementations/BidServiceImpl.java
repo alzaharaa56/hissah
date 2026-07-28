@@ -1,9 +1,9 @@
 package com.hissah.Services.Implementations;
 
-import com.hissah.DTOs.Requests.BidDecisionRequestDTO;
-import com.hissah.DTOs.Requests.BidRequestDTO;
-import com.hissah.DTOs.Responses.BidComparisonResponseDTO;
-import com.hissah.DTOs.Responses.BidResponseDTO;
+import com.hissah.DTO.Requests.BidDecisionRequestDTO;
+import com.hissah.DTO.Requests.BidRequestDTO;
+import com.hissah.DTO.Responses.BidComparisonResponseDTO;
+import com.hissah.DTO.Responses.BidResponseDTO;
 import com.hissah.Entities.Bid;
 import com.hissah.Entities.BidDocument;
 import com.hissah.Entities.Company;

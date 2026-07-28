@@ -1,8 +1,8 @@
 package com.hissah.Services.Implementations;
 
-import com.hissah.DTOs.Requests.AwardRequestDTO;
-import com.hissah.DTOs.Responses.AwardResponseDTO;
-import com.hissah.DTOs.Responses.MilestoneResponseDTO;
+import com.hissah.DTO.Requests.AwardRequestDTO;
+import com.hissah.DTO.Responses.AwardResponseDTO;
+import com.hissah.DTO.Responses.MilestoneResponseDTO;
 import com.hissah.Entities.Award;
 import com.hissah.Entities.Bid;
 import com.hissah.Entities.Company;

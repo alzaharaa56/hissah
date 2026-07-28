@@ -1,6 +1,6 @@
 package com.hissah.Services;
 
-import com.hissah.DTOs.Responses.DashboardResponseDTO;
+import com.hissah.DTO.Responses.DashboardResponseDTO;
 import com.hissah.Enums.Role;
 
 public interface ReportingService {

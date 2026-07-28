@@ -1,6 +1,6 @@
 package com.hissah.DTOs.Requests;
 
-import com.hissah.enums.BidStatus;
+import com.hissah.Enums.BidStatus;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
