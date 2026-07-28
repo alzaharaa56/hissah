@@ -8,6 +8,7 @@ public class AuthResponseDTO {
     private String type = "Bearer";
     private Long id;
     private String fullName;
+
     private String email;
     private Role role;
 
@@ -15,6 +16,7 @@ public class AuthResponseDTO {
         this.token = token;
         this.id = id;
         this.fullName = fullName;
+
         this.email = email;
         this.role = role;
     }
