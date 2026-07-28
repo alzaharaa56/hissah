@@ -1,0 +1,44 @@
+package com.hissah.DTOs.Responses;
+
+import com.hissah.Enums.EligibilityType;
+import com.hissah.Enums.WorkPackageStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class WorkPackageResponseDTO {
+    private Long id;
+    private String referenceNumber;
+    private String title;
+    private String scope;
+    private String requirements;
+    private BigDecimal budgetMin;
+    private BigDecimal budgetMax;
+    private LocalDateTime deadline;
+    private String location;
+    private WorkPackageStatus status;
+    private EligibilityType eligibilityType;
+    private Long projectId;
+    private String projectTitle;
+    private String projectReferenceNumber;
+    private Long categoryId;
+    private String categoryName;
+    private Long contractorCompanyId;
+    private String contractorCompanyName;
+    private Long bidCount;
+    private Boolean canBid;
+    private LocalDateTime publishedAt;
+    private LocalDateTime closedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}

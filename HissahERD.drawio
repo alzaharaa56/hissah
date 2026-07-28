@@ -1,0 +1,154 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="NXhIhVsDsK0plF7Klo2F">
+    <mxGraphModel dx="1393" dy="825" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-1" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=24;fontStyle=1;fontColor=#173F35;" value="HISSAH | حِصّة&#xa;SME Work Package and Subcontracting Platform&#xa;Corrected Entity Relationship Diagram" vertex="1">
+          <mxGeometry height="90" width="650" x="470" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#DCE7F3;strokeColor=#51657A;fontSize=11;" value="&lt;b&gt;USER&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;full_name : VARCHAR(100)&lt;br&gt;email : VARCHAR(120) UNIQUE&lt;br&gt;password_hash : VARCHAR(255)&lt;br&gt;phone : VARCHAR(20)&lt;br&gt;role : ENUM&lt;br&gt;account_status : ENUM&lt;br&gt;created_at : DATETIME&lt;br&gt;updated_at : DATETIME" vertex="1">
+          <mxGeometry height="170" width="250" x="150" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#DDEDE4;strokeColor=#4F7865;fontSize=11;" value="&lt;b&gt;COMPANY&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK, UNIQUE&lt;/b&gt; user_id : BIGINT&lt;br&gt;legal_name : VARCHAR(150)&lt;br&gt;trading_name : VARCHAR(150)&lt;br&gt;company_type : ENUM&lt;br&gt;cr_number : VARCHAR(100) UNIQUE&lt;br&gt;governorate : VARCHAR(80)&lt;br&gt;description : TEXT&lt;br&gt;verification_status : ENUM&lt;br&gt;created_at : DATETIME&lt;br&gt;updated_at : DATETIME" vertex="1">
+          <mxGeometry height="200" width="220" x="520" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#F5E8CC;strokeColor=#A97932;fontSize=11;" value="&lt;b&gt;COMPANY_DOCUMENT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; company_id : BIGINT&lt;br&gt;document_type : ENUM&lt;br&gt;document_number : VARCHAR(100)&lt;br&gt;file_path : VARCHAR(255)&lt;br&gt;expiry_date : DATE&lt;br&gt;verification_status : ENUM&lt;br&gt;uploaded_at : DATETIME" vertex="1">
+          <mxGeometry height="160" width="220" x="520" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#E9DFF0;strokeColor=#7C6090;fontSize=11;" value="&lt;b&gt;CATEGORY&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK, NULL&lt;/b&gt; parent_category_id : BIGINT&lt;br&gt;name : VARCHAR(100)&lt;br&gt;active : BOOLEAN" vertex="1">
+          <mxGeometry height="100" width="230" x="30" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#F0E8F5;strokeColor=#7C6090;fontSize=11;" value="&lt;b&gt;COMPANY_CATEGORY&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK, FK&lt;/b&gt; company_id : BIGINT&lt;br&gt;&lt;b&gt;PK, FK&lt;/b&gt; category_id : BIGINT" vertex="1">
+          <mxGeometry height="80" width="180" x="50" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#E1EDDB;strokeColor=#557A55;fontSize=11;" value="&lt;b&gt;PROJECT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; contractor_company_id : BIGINT&lt;br&gt;title : VARCHAR(180)&lt;br&gt;reference_number : VARCHAR(100) UNIQUE&lt;br&gt;sector : VARCHAR(100)&lt;br&gt;location : VARCHAR(150)&lt;br&gt;description : TEXT&lt;br&gt;start_date : DATE&lt;br&gt;end_date : DATE&lt;br&gt;created_at : DATETIME&lt;br&gt;updated_at : DATETIME" vertex="1">
+          <mxGeometry height="200" width="260" x="790" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#D9ECEC;strokeColor=#38777B;fontSize=11;" value="&lt;b&gt;WORK_PACKAGE&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; project_id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; category_id : BIGINT&lt;br&gt;title : VARCHAR(180)&lt;br&gt;scope : TEXT&lt;br&gt;budget_min : DECIMAL(15,3)&lt;br&gt;budget_max : DECIMAL(15,3)&lt;br&gt;deadline : DATETIME&lt;br&gt;location : VARCHAR(150)&lt;br&gt;status : ENUM&lt;br&gt;eligibility_type : ENUM&lt;br&gt;created_at : DATETIME&lt;br&gt;updated_at : DATETIME" vertex="1">
+          <mxGeometry height="250" width="220" x="1140" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#DCE7F5;strokeColor=#4E6E9E;fontSize=11;" value="&lt;b&gt;BID&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; work_package_id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; bidder_company_id : BIGINT&lt;br&gt;amount : DECIMAL(15,3)&lt;br&gt;delivery_days : INT&lt;br&gt;proposal_text : TEXT&lt;br&gt;submitted_at : DATETIME&lt;br&gt;status : ENUM&lt;br&gt;created_at : DATETIME&lt;br&gt;updated_at : DATETIME&lt;br&gt;&lt;b&gt;UNIQUE&lt;/b&gt; work_package_id + bidder_company_id" vertex="1">
+          <mxGeometry height="200" width="280" x="1240" y="770" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#F4DEDE;strokeColor=#B06565;fontSize=11;" value="&lt;b&gt;BID_DOCUMENT&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; bid_id : BIGINT&lt;br&gt;file_name : VARCHAR(200)&lt;br&gt;file_path : VARCHAR(255)&lt;br&gt;document_type : ENUM&lt;br&gt;uploaded_at : DATETIME" vertex="1">
+          <mxGeometry height="130" width="170" x="1470" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#F6E4BC;strokeColor=#A97932;fontSize=11;" value="&lt;b&gt;AWARD&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK, UNIQUE&lt;/b&gt; work_package_id : BIGINT&lt;br&gt;&lt;b&gt;FK, UNIQUE&lt;/b&gt; bid_id : BIGINT&lt;br&gt;awarded_at : DATETIME&lt;br&gt;agreed_amount : DECIMAL(15,3)&lt;br&gt;agreed_delivery_days : INT&lt;br&gt;notes : TEXT&lt;br&gt;created_at : DATETIME" vertex="1">
+          <mxGeometry height="160" width="230" x="770" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#EFE3D3;strokeColor=#8B6B45;fontSize=11;" value="&lt;b&gt;MILESTONE&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; award_id : BIGINT&lt;br&gt;title : VARCHAR(180)&lt;br&gt;due_date : DATE&lt;br&gt;completion_percent : INT&lt;br&gt;status : ENUM&lt;br&gt;created_at : DATETIME&lt;br&gt;updated_at : DATETIME" vertex="1">
+          <mxGeometry height="160" width="160" x="510" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#F1DDEA;strokeColor=#9B4D7B;fontSize=11;" value="&lt;b&gt;NOTIFICATION&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; user_id : BIGINT&lt;br&gt;title : VARCHAR(180)&lt;br&gt;message : TEXT&lt;br&gt;read_flag : BOOLEAN&lt;br&gt;created_at : DATETIME" vertex="1">
+          <mxGeometry height="150" width="140" x="280" y="855" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#E4E8E6;strokeColor=#66716C;fontSize=11;" value="&lt;b&gt;STATUS_HISTORY&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; id : BIGINT&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; changed_by_user_id : BIGINT&lt;br&gt;entity_type : VARCHAR(50)&lt;br&gt;entity_id : BIGINT&lt;br&gt;old_status : VARCHAR(50)&lt;br&gt;new_status : VARCHAR(50)&lt;br&gt;changed_at : DATETIME&lt;br&gt;note : TEXT" vertex="1">
+          <mxGeometry height="160" width="200" x="270" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-15" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-3" value="1 : 1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="630" y="140" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-16" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-13" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="220" />
+              <mxPoint x="500" y="800" />
+              <mxPoint x="350" y="800" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-17" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-14" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-18" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-4" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-19" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-7" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-20" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-8" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-21" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-8" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1210" y="760" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-22" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-6" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-23" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-6" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-24" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;loopStyle=orthogonalLoopStyle;endArrow=ERmany;startArrow=ERzeroToOne;" target="jKRmlA-FL4rIzg5vtBx7-5" value="parent 0..1 : children 0..*">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="205" y="610" />
+              <mxPoint x="370" y="610" />
+              <mxPoint x="370" y="730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-25" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-9" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1310" y="590" />
+              <mxPoint x="1310" y="590" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-26" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-9" value="submits 0..* bids">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="670" y="440" />
+              <mxPoint x="1030" y="440" />
+              <mxPoint x="1030" y="870" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-27" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-10" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1380" y="710" />
+              <mxPoint x="1555" y="710" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-28" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERzeroToOne;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-11" value="1 : 0..1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="885" y="470" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-29" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERzeroToOne;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-11" value="winning bid 0..1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1190" y="920" />
+              <mxPoint x="1190" y="920" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-30" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="jKRmlA-FL4rIzg5vtBx7-12" value="1 : 0..*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-31" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#F7F9F8;strokeColor=#173F35;fontSize=11;" value="&lt;b&gt;Legend&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; = Primary Key&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; = Foreign Key&lt;br&gt;&lt;b&gt;UNIQUE&lt;/b&gt; = Unique constraint&lt;br&gt;1 = Exactly one&lt;br&gt;0..1 = Zero or one&lt;br&gt;0..* = Zero or many" vertex="1">
+          <mxGeometry height="130" width="180" x="1260" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-32" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=#FFF4E5;strokeColor=#B58A3A;fontSize=11;" value="&lt;b&gt;Important Business Rules&lt;/b&gt;&lt;hr&gt;• One user owns one company profile.&lt;br&gt;• A company cannot bid on its own project.&lt;br&gt;• One company can submit one active bid per package.&lt;br&gt;• A work package can have only one award.&lt;br&gt;• The award must reference a bid belonging to the same work package.&lt;br&gt;• StatusHistory uses entity_type and entity_id as a generic audit reference." vertex="1">
+          <mxGeometry height="130" width="400" x="1140" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="jKRmlA-FL4rIzg5vtBx7-33" edge="1" parent="1" source="jKRmlA-FL4rIzg5vtBx7-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="jKRmlA-FL4rIzg5vtBx7-31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
