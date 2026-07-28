@@ -6,7 +6,7 @@ import com.hissah.Enums.AccountStatus;
 import lombok.Data;
 
 @Data
-public class UserRequestDTO {
+public class RegisterRequestDTO {
     private String fullName;
     private String email;
     private String passwordHash;
