@@ -1,4 +1,4 @@
-package com.hissah.DTO;
+package com.hissah.DTO.Response;
 
 import com.hissah.Entities.User;
 import com.hissah.Enums.Role;
