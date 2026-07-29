@@ -1,4 +1,4 @@
-package com.hissah.DTO.Responses;
+package com.hissah.DTO.Response;
 
 import com.hissah.Enums.EligibilityType;
 import com.hissah.Enums.WorkPackageStatus;

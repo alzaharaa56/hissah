@@ -1,4 +1,4 @@
-package com.hissah.DTO.Responses;
+package com.hissah.DTO.Response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

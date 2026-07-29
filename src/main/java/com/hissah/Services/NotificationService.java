@@ -1,6 +1,6 @@
 package com.hissah.Services;
 
-import com.hissah.DTO.Responses.NotificationResponseDTO;
+import com.hissah.DTO.Response.NotificationResponseDTO;
 import com.hissah.Enums.NotificationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,6 +1,6 @@
 package com.hissah.Services.Implementations;
 
-import com.hissah.DTO.Responses.NotificationResponseDTO;
+import com.hissah.DTO.Response.NotificationResponseDTO;
 import com.hissah.Entities.Notification;
 import com.hissah.Entities.User;
 import com.hissah.Enums.NotificationType;
