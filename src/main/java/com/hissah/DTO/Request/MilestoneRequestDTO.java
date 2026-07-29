@@ -1,4 +1,4 @@
-package com.hissah.DTO.Requests;
+package com.hissah.DTO.Request;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;

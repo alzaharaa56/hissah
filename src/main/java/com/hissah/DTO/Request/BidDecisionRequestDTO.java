@@ -1,4 +1,4 @@
-package com.hissah.DTO.Requests;
+package com.hissah.DTO.Request;
 
 import com.hissah.Enums.BidStatus;
 import jakarta.validation.constraints.AssertTrue;
