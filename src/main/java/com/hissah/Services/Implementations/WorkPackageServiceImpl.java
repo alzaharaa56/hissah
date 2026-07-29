@@ -1,9 +1,9 @@
 package com.hissah.Services.Implementations;
 
-import com.hissah.DTO.Requests.WorkPackageRequestDTO;
-import com.hissah.DTO.Requests.WorkPackageSearchRequestDTO;
-import com.hissah.DTO.Responses.WorkPackageResponseDTO;
-import com.hissah.DTO.Responses.WorkPackageSummaryResponseDTO;
+import com.hissah.DTO.Request.WorkPackageRequestDTO;
+import com.hissah.DTO.Request.WorkPackageSearchRequestDTO;
+import com.hissah.DTO.Response.WorkPackageResponseDTO;
+import com.hissah.DTO.Response.WorkPackageSummaryResponseDTO;
 import com.hissah.Entities.Category;
 import com.hissah.Entities.Company;
 import com.hissah.Entities.Project;

@@ -1,7 +1,7 @@
 package com.hissah.Services;
 
-import com.hissah.DTO.Requests.AwardRequestDTO;
-import com.hissah.DTO.Responses.AwardResponseDTO;
+import com.hissah.DTO.Request.AwardRequestDTO;
+import com.hissah.DTO.Response.AwardResponseDTO;
 
 import java.util.List;
 

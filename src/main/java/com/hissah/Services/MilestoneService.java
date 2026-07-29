@@ -1,8 +1,8 @@
 package com.hissah.Services;
 
-import com.hissah.DTO.Requests.MilestoneProgressRequestDTO;
-import com.hissah.DTO.Requests.MilestoneRequestDTO;
-import com.hissah.DTO.Responses.MilestoneResponseDTO;
+import com.hissah.DTO.Request.MilestoneProgressRequestDTO;
+import com.hissah.DTO.Request.MilestoneRequestDTO;
+import com.hissah.DTO.Response.MilestoneResponseDTO;
 
 import java.util.List;
 
