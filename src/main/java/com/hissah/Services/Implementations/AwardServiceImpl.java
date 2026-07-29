@@ -27,7 +27,7 @@ import com.hissah.Repositories.UserRepository;
 import com.hissah.Repositories.WorkPackageRepository;
 import com.hissah.Services.AwardService;
 import com.hissah.Services.NotificationService;
-import com.hissah.Utils.OwnershipValidator;
+import com.hissah.Utilities.OwnershipValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
