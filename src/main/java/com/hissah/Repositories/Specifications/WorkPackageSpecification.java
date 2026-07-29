@@ -3,7 +3,7 @@
  */
 package com.hissah.Repositories.Specifications;
 
-import com.hissah.DTOs.Requests.WorkPackageSearchRequestDTO;
+import com.hissah.DTO.Requests.WorkPackageSearchRequestDTO;
 import com.hissah.entities.WorkPackage;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
