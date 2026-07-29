@@ -1,99 +1,402 @@
 package com.hissah.Services.Implementations;
 
+import com.hissah.DTO.Request.CompanyDocumentRequestDTO;
+import com.hissah.DTO.Response.CompanyDocumentResponseDTO;
+import com.hissah.Entities.Company;
 import com.hissah.Entities.CompanyDocument;
 import com.hissah.Enums.DocumentType;
+import com.hissah.Enums.Role;
 import com.hissah.Enums.VerificationStatus;
+import com.hissah.Exceptions.BusinessRuleException;
+import com.hissah.Exceptions.FileStorageException;
 import com.hissah.Exceptions.ResourceNotFoundException;
+import com.hissah.Exceptions.UnauthorizedOperationException;
 import com.hissah.Repositories.CompanyDocumentRepository;
+import com.hissah.Repositories.CompanyRepository;
+import com.hissah.Services.CompanyDocumentService;
+import com.hissah.Services.implementations.support.ServiceDtoMapper;
+import com.hissah.Utilities.FileNameGenerator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class CompanyDocumentServiceImpl {
+@Transactional(readOnly = true)
+public class CompanyDocumentServiceImpl
+        implements CompanyDocumentService {
+
+    private static final long MAX_FILE_SIZE_BYTES =
+            5L * 1024L * 1024L;
 
     private final CompanyDocumentRepository companyDocumentRepository;
+    private final CompanyRepository companyRepository;
+    private final ServiceDtoMapper mapper;
 
+    @Qualifier("uploadRootPath")
+    private final Path uploadRootPath;
 
-    private final String uploadDir = "uploads/company-documents/";
-
+    @Override
     @Transactional
-    public CompanyDocument uploadDocument(Long companyId, MultipartFile file, DocumentType documentType, String documentNumber, LocalDate expiryDate) {
-        validateDocument(file);
+    public CompanyDocumentResponseDTO upload(
+            Long companyId,
+            CompanyDocumentRequestDTO request
+    ) {
+        Company company = getCompany(companyId);
+
+        DocumentType documentType = mapper.enumValue(
+                request,
+                DocumentType.class,
+                "documentType",
+                "type"
+        );
+        String documentNumber = mapper.text(
+                request,
+                "documentNumber",
+                "number"
+        );
+        LocalDate expiryDate = mapper.dateValue(
+                request,
+                "expiryDate"
+        );
+        MultipartFile file = mapper.fileValue(
+                request,
+                "file",
+                "document"
+        );
+
+        if (documentType == null) {
+            throw new BusinessRuleException(
+                    "Document type is required."
+            );
+        }
+        if (file == null || file.isEmpty()) {
+            throw new FileStorageException(
+                    "A document file is required."
+            );
+        }
+        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
+            throw new FileStorageException(
+                    "Company documents must not exceed 5 MB."
+            );
+        }
+        if (expiryDate != null
+                && expiryDate.isBefore(LocalDate.now())) {
+            throw new BusinessRuleException(
+                    "An expired document cannot be uploaded."
+            );
+        }
+
+        String originalName = StringUtils.cleanPath(
+                file.getOriginalFilename() == null
+                        ? "document"
+                        : file.getOriginalFilename()
+        );
+        String storedName =
+                FileNameGenerator.generate(originalName);
+
+        Path companyDirectory =
+                uploadRootPath
+                        .resolve("company-documents")
+                        .resolve(String.valueOf(companyId))
+                        .normalize();
+
+        if (!companyDirectory.startsWith(
+                uploadRootPath.normalize())) {
+            throw new FileStorageException(
+                    "Invalid company document directory."
+            );
+        }
+
+        Path target =
+                FileNameGenerator.resolveSafePath(
+                        companyDirectory,
+                        storedName
+                );
 
         try {
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
+            Files.createDirectories(companyDirectory);
+            try (InputStream inputStream =
+                         file.getInputStream()) {
+                Files.copy(
+                        inputStream,
+                        target,
+                        StandardCopyOption.REPLACE_EXISTING
+                );
             }
 
-            String originalFileName = file.getOriginalFilename();
-            String uniqueFileName = UUID.randomUUID().toString() + "_" + originalFileName;
-            Path filePath = uploadPath.resolve(uniqueFileName);
+            deactivatePreviousDocumentType(
+                    companyId,
+                    documentType
+            );
 
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            CompanyDocument document = new CompanyDocument();
-            document.setCompanyId(companyId);
+            CompanyDocument document =
+                    new CompanyDocument();
             document.setDocumentType(documentType);
             document.setDocumentNumber(documentNumber);
-            document.setFilePath(filePath.toString());
+            document.setFileName(originalName);
+            document.setStoredFileName(storedName);
+            document.setFilePath(
+                    uploadRootPath
+                            .relativize(target)
+                            .toString()
+                            .replace("\\", "/")
+            );
             document.setExpiryDate(expiryDate);
-            document.setVerificationStatus(VerificationStatus.PENDING_REVIEW);
+            document.setVerificationStatus(
+                    VerificationStatus.PENDING_REVIEW
+            );
+            document.setCompany(company);
+            document.setActive(true);
 
-            return companyDocumentRepository.save(document);
+            CompanyDocument saved =
+                    companyDocumentRepository.save(document);
 
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to store file " + file.getOriginalFilename(), e);
+            if (company.getVerificationStatus()
+                    == VerificationStatus.VERIFIED) {
+                company.setVerificationStatus(
+                        VerificationStatus.PENDING_REVIEW
+                );
+                company.setRejectionReason(null);
+                companyRepository.save(company);
+            }
+
+            return toResponse(saved);
+        } catch (IOException exception) {
+            deleteQuietly(target);
+            throw new FileStorageException(
+                    "Failed to store the company document.",
+                    exception
+            );
+        } catch (RuntimeException exception) {
+            deleteQuietly(target);
+            throw exception;
         }
     }
 
-    public void validateDocument(MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("Failed to store empty file.");
+    @Override
+    public List<CompanyDocumentResponseDTO> getForCompany(
+            Long companyId,
+            Long currentCompanyId,
+            Role currentRole
+    ) {
+        validateVisibility(
+                companyId,
+                currentCompanyId,
+                currentRole
+        );
+
+        return companyDocumentRepository.findAll()
+                .stream()
+                .filter(document ->
+                        document.getCompany() != null
+                                && companyId.equals(
+                                document.getCompany().getId()
+                        )
+                                && Boolean.TRUE.equals(
+                                document.getActive()
+                        )
+                )
+                .sorted(
+                        Comparator.comparing(
+                                CompanyDocument::getCreatedAt,
+                                Comparator.nullsLast(
+                                        Comparator.reverseOrder()
+                                )
+                        )
+                )
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    public DownloadFile download(
+            Long documentId,
+            Long currentCompanyId,
+            Role currentRole
+    ) {
+        CompanyDocument document = getDocument(documentId);
+
+        validateVisibility(
+                document.getCompany().getId(),
+                currentCompanyId,
+                currentRole
+        );
+
+        Path storedPath =
+                uploadRootPath
+                        .resolve(document.getFilePath())
+                        .normalize();
+
+        if (!storedPath.startsWith(
+                uploadRootPath.normalize())) {
+            throw new FileStorageException(
+                    "Invalid company document path."
+            );
+        }
+        if (!Files.isRegularFile(storedPath)) {
+            throw new ResourceNotFoundException(
+                    "The stored company document file is missing."
+            );
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null || (!contentType.equals("application/pdf") && !contentType.startsWith("image/"))) {
-            throw new IllegalArgumentException("Invalid file type. Only PDF and image files are allowed.");
-        }
+        try {
+            String contentType =
+                    Files.probeContentType(storedPath);
+            long fileSize = Files.size(storedPath);
 
-        long maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.getSize() > maxSize) {
-            throw new IllegalArgumentException("File size exceeds the maximum limit of 5MB.");
+            return new DownloadFile(
+                    storedPath,
+                    document.getFileName(),
+                    contentType == null
+                            ? "application/octet-stream"
+                            : contentType,
+                    fileSize
+            );
+        } catch (IOException exception) {
+            throw new FileStorageException(
+                    "Unable to read the company document.",
+                    exception
+            );
         }
     }
 
+    @Override
     @Transactional
-    public CompanyDocument updateVerificationStatus(Long documentId, VerificationStatus status) {
-        CompanyDocument document = getDocumentById(documentId);
-        document.setVerificationStatus(status);
-        return companyDocumentRepository.save(document);
-    }
+    public void delete(
+            Long documentId,
+            Long currentCompanyId
+    ) {
+        CompanyDocument document = getDocument(documentId);
 
-
-    public List<CompanyDocument> getDocumentsByCompanyId(Long companyId) {
-        List<CompanyDocument> documents = companyDocumentRepository.findDocumentsByCompanyId(companyId);
-        if (documents.isEmpty()) {
-            throw new ResourceNotFoundException("No documents found for company id: " + companyId);
+        if (!document.getCompany().getId()
+                .equals(currentCompanyId)) {
+            throw new UnauthorizedOperationException(
+                    "You cannot remove another company's document."
+            );
         }
-        return documents;
+
+        document.setActive(false);
+        companyDocumentRepository.save(document);
+
+        Company company = document.getCompany();
+        if (company.getVerificationStatus()
+                == VerificationStatus.VERIFIED) {
+            company.setVerificationStatus(
+                    VerificationStatus.PENDING_REVIEW
+            );
+            company.setRejectionReason(null);
+            companyRepository.save(company);
+        }
     }
 
+    private void deactivatePreviousDocumentType(
+            Long companyId,
+            DocumentType documentType
+    ) {
+        List<CompanyDocument> previous =
+                companyDocumentRepository.findAll()
+                        .stream()
+                        .filter(document ->
+                                document.getCompany() != null
+                                        && companyId.equals(
+                                        document.getCompany().getId()
+                                )
+                                        && document.getDocumentType()
+                                        == documentType
+                                        && Boolean.TRUE.equals(
+                                        document.getActive()
+                                )
+                        )
+                        .toList();
 
-    public CompanyDocument getDocumentById(Long documentId) {
+        for (CompanyDocument document : previous) {
+            document.setActive(false);
+        }
+
+        companyDocumentRepository.saveAll(previous);
+    }
+
+    private void validateVisibility(
+            Long companyId,
+            Long currentCompanyId,
+            Role currentRole
+    ) {
+        boolean admin = currentRole == Role.ADMIN;
+        boolean owner = companyId.equals(currentCompanyId);
+
+        if (!admin && !owner) {
+            throw new UnauthorizedOperationException(
+                    "You cannot access another company's documents."
+            );
+        }
+    }
+
+    private Company getCompany(Long companyId) {
+        return companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Company not found with id: " + companyId
+                ));
+    }
+
+    private CompanyDocument getDocument(Long documentId) {
         return companyDocumentRepository.findById(documentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company document not found with id: " + documentId));
+                .filter(document ->
+                        Boolean.TRUE.equals(document.getActive())
+                )
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Company document not found with id: "
+                                + documentId
+                ));
+    }
+
+    private CompanyDocumentResponseDTO toResponse(
+            CompanyDocument document
+    ) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("id", document.getId());
+        values.put("documentType", document.getDocumentType());
+        values.put(
+                "documentNumber",
+                document.getDocumentNumber()
+        );
+        values.put("fileName", document.getFileName());
+        values.put("expiryDate", document.getExpiryDate());
+        values.put(
+                "verificationStatus",
+                document.getVerificationStatus()
+        );
+        values.put(
+                "companyId",
+                document.getCompany().getId()
+        );
+        values.put("createdAt", document.getCreatedAt());
+        values.put("updatedAt", document.getUpdatedAt());
+        return mapper.toDto(
+                values,
+                CompanyDocumentResponseDTO.class
+        );
+    }
+
+    private void deleteQuietly(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException ignored) {
+            // Preserve the original storage exception.
+        }
     }
 }
