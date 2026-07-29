@@ -3,6 +3,7 @@ package com.hissah.Services;
 import com.hissah.DTO.Requests.BidDecisionRequestDTO;
 import com.hissah.DTO.Requests.BidRequestDTO;
 import com.hissah.DTO.Responses.BidComparisonResponseDTO;
+import com.hissah.DTO.Responses.BidDocumentDownloadDTO;
 import com.hissah.DTO.Responses.BidResponseDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,4 +42,7 @@ public interface BidService {
 
     List<BidComparisonResponseDTO> compareForWorkPackage(
             Long workPackageId, Long contractorCompanyId);
+
+    BidDocumentDownloadDTO downloadDocument(
+            Long documentId, Long currentCompanyId);
 }

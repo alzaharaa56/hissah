@@ -3,7 +3,12 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-
+.env
+uploads/*
+!uploads/.gitkeep
+*.log
+.idea/
+*.iml
 ### STS ###
 .apt_generated
 .classpath

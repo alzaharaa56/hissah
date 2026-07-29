@@ -22,7 +22,7 @@ import com.hissah.Repositories.UserRepository;
 import com.hissah.Repositories.WorkPackageRepository;
 import com.hissah.Repositories.Specifications.WorkPackageSpecification;
 import com.hissah.Services.WorkPackageService;
-import com.hissah.Utils.OwnershipValidator;
+import com.hissah.Utilities.OwnershipValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

@@ -4,6 +4,7 @@ import com.hissah.DTO.Requests.BidDecisionRequestDTO;
 import com.hissah.DTO.Requests.BidRequestDTO;
 import com.hissah.DTO.Responses.BidComparisonResponseDTO;
 import com.hissah.DTO.Responses.BidResponseDTO;
+import com.hissah.DTO.Responses.BidDocumentDownloadDTO;
 import com.hissah.Entities.Bid;
 import com.hissah.Entities.BidDocument;
 import com.hissah.Entities.Company;
@@ -28,8 +29,8 @@ import com.hissah.Repositories.UserRepository;
 import com.hissah.Repositories.WorkPackageRepository;
 import com.hissah.Services.BidService;
 import com.hissah.Services.NotificationService;
-import com.hissah.Utils.FileNameGenerator;
-import com.hissah.Utils.OwnershipValidator;
+import com.hissah.Utilities.FileNameGenerator;
+import com.hissah.Utilities.OwnershipValidator;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -355,6 +356,51 @@ public class BidServiceImpl implements BidService {
                 .toList();
     }
 
+
+    @Override
+    public BidDocumentDownloadDTO downloadDocument(
+            Long documentId,
+            Long currentCompanyId
+    ) {
+        BidDocument document =
+                bidDocumentRepository
+                        .findByIdAndActiveTrue(documentId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Bid document not found with id: "
+                                        + documentId
+                        ));
+
+        validateBidVisibility(
+                document.getBid(),
+                currentCompanyId
+        );
+
+        Path storedPath =
+                uploadRootPath
+                        .resolve(document.getFilePath())
+                        .normalize();
+
+        if (!storedPath.startsWith(
+                uploadRootPath.normalize())) {
+            throw new FileStorageException(
+                    "Invalid bid document path."
+            );
+        }
+
+        if (!Files.isRegularFile(storedPath)) {
+            throw new ResourceNotFoundException(
+                    "The stored bid document file is missing."
+            );
+        }
+
+        return new BidDocumentDownloadDTO(
+                storedPath,
+                document.getFileName(),
+                document.getContentType(),
+                document.getFileSize()
+        );
+    }
+
     private Bid buildNewBid(
             BidRequestDTO request,
             Long currentCompanyId,
@@ -476,10 +522,10 @@ public class BidServiceImpl implements BidService {
     private boolean hasVerifiedRiyadaRecord(Company company) {
         Long count = entityManager.createQuery(
                         "select count(document.id) from CompanyDocument document " +
-                        "where document.company.id = :companyId " +
-                        "and document.documentType = :documentType " +
-                        "and document.verificationStatus = :verificationStatus " +
-                        "and document.active = true",
+                                "where document.company.id = :companyId " +
+                                "and document.documentType = :documentType " +
+                                "and document.verificationStatus = :verificationStatus " +
+                                "and document.active = true",
                         Long.class
                 )
                 .setParameter("companyId", company.getId())

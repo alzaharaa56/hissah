@@ -1,4 +1,4 @@
-package com.hissah.DTOs.Responses;
+package com.hissah.DTO.Responses;
 
 import com.hissah.Enums.MilestoneStatus;
 import lombok.AllArgsConstructor;
