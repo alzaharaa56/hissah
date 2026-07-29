@@ -34,6 +34,11 @@ public class CompanyService {
         return CompanyResponseDTO.fromEntity(savedCompany);
     }
 
+    public Company getCompanyById(Long companyId) {
+        return companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + companyId));
+    }
+
 
     public CompanyResponseDTO getCompanyProfile(Long companyId) {
         Company company = companyRepository.findById(companyId)

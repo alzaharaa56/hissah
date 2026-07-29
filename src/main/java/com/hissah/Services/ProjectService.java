@@ -1,71 +1,60 @@
 package com.hissah.Services;
 
-import com.hissah.Enums.VerificationStatus;
-import com.hissah.Entities.Company;
+import com.hissah.DTO.Request.ProjectRequestDTO;
+import com.hissah.DTO.Response.ProjectResponseDTO;
+import com.hissah.DTO.Response.ProjectSummaryResponseDTO;
 import com.hissah.Entities.Project;
-import com.hissah.Exceptions.ResourceNotFoundException;
-import com.hissah.Repositories.ProjectRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.hissah.Enums.Role;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
+public interface ProjectService {
+    ProjectResponseDTO create(
+            ProjectRequestDTO request,
+            Long contractorCompanyId,
+            Long currentUserId
+    );
 
-@Service
-@RequiredArgsConstructor
-public class ProjectService {
+    ProjectResponseDTO update(
+            Long projectId,
+            ProjectRequestDTO request,
+            Long contractorCompanyId,
+            Long currentUserId
+    );
 
-    private final ProjectRepository projectRepository;
-    private final CompanyService companyService;
+    ProjectResponseDTO activate(
+            Long projectId,
+            Long contractorCompanyId,
+            Long currentUserId
+    );
 
+    ProjectResponseDTO complete(
+            Long projectId,
+            Long contractorCompanyId,
+            Long currentUserId
+    );
 
-    public List<Project> getAllProjects() {
-        return projectRepository.findAll();
-    }
+    ProjectResponseDTO cancel(
+            Long projectId,
+            String reason,
+            Long contractorCompanyId,
+            Long currentUserId
+    );
 
+    ProjectResponseDTO getById(
+            Long projectId,
+            Long currentCompanyId,
+            Role currentRole
+    );
 
-    public Project getProjectById(Long id) {
-        return projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + id));
-    }
+    Page<ProjectSummaryResponseDTO> getMyProjects(
+            Long contractorCompanyId,
+            Pageable pageable
+    );
 
-
-    @Transactional
-    public Project createProject(Project project, Long contractorCompanyId) {
-        Company contractor = companyService.getCompanyById(contractorCompanyId);
-
-        if (contractor.getVerificationStatus() == null || contractor.getVerificationStatus() != VerificationStatus.VERIFIED) {
-            throw new IllegalStateException("Project creation restricted: Contractor company must be a verified main contractor.");
-        }
-
-        project.setContractorCompanyId(contractorCompanyId);
-        return projectRepository.save(project);
-    }
-
-    @Transactional
-    public Project updateProject(Long id, Project projectDetails, Long contractorCompanyId) {
-        Project project = getProjectById(id);
-
-        Company contractor = companyService.getCompanyById(contractorCompanyId);
-        if (contractor.getVerificationStatus() == null || contractor.getVerificationStatus() != VerificationStatus.VERIFIED) {
-            throw new IllegalStateException("Project update restricted: Contractor company must be a verified main contractor.");
-        }
-
-        project.setTitle(projectDetails.getTitle());
-        project.setReferenceNumber(projectDetails.getReferenceNumber());
-        project.setSector(projectDetails.getSector());
-        project.setLocation(projectDetails.getLocation());
-        project.setDescription(projectDetails.getDescription());
-        project.setStartDate(projectDetails.getStartDate());
-        project.setEndDate(projectDetails.getEndDate());
-        project.setContractorCompanyId(contractorCompanyId);
-
-        return projectRepository.save(project);
-    }
-
-    @Transactional
-    public void deleteProject(Long id) {
-        Project project = getProjectById(id);
-        projectRepository.delete(project);
-    }
+    Project getOwnedProjectEntity(
+            Long projectId,
+            Long contractorCompanyId
+    );
 }
+
