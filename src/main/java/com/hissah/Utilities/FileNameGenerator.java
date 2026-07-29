@@ -1,4 +1,4 @@
-package com.hissah.Utils;
+package com.hissah.Utilities;
 
 import com.hissah.Exceptions.FileStorageException;
 import org.springframework.util.StringUtils;
