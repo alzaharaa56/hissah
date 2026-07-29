@@ -75,7 +75,7 @@ public class CompanyDocumentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
 
         try {
-            Path filePath = Paths.get(document.getFilePath()).normalize(); // استخدام getFilePath() الصحيحة
+            Path filePath = Paths.get(document.getFilePath()).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
