@@ -1,4 +1,4 @@
-package com.hissah.DTOs.Requests;
+package com.hissah.DTO.Requests;
 
 import com.hissah.Enums.MilestoneStatus;
 import jakarta.validation.constraints.Max;
