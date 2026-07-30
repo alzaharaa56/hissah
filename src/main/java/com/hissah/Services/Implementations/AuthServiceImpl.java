@@ -21,7 +21,7 @@ import com.hissah.Repositories.UserRepository;
 import com.hissah.Security.CustomUserDetailsService;
 import com.hissah.Security.JwtService;
 import com.hissah.Services.AuthService;
-import com.hissah.Services.Implementations.support.ServiceDtoMapper;
+import com.hissah.Services.Implementations.Support.ServiceDtoMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -30,6 +30,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -143,7 +144,6 @@ public class AuthServiceImpl implements AuthService {
         user.setPhone(phone);
         user.setRole(role);
         user.setAccountStatus(AccountStatus.ACTIVE);
-        user.setActive(true);
         User savedUser = userRepository.save(user);
 
         Company company = new Company();
@@ -156,9 +156,6 @@ public class AuthServiceImpl implements AuthService {
         company.setVerificationStatus(
                 VerificationStatus.PENDING_REVIEW
         );
-        company.setRejectionReason(null);
-        company.setUser(savedUser);
-        company.setActive(true);
         Company savedCompany = companyRepository.save(company);
 
         assignCategories(
@@ -207,13 +204,8 @@ public class AuthServiceImpl implements AuthService {
                     "This account is not active."
             );
         }
-        if (!Boolean.TRUE.equals(user.getActive())) {
-            throw new BusinessRuleException(
-                    "This account has been disabled."
-            );
-        }
 
-        Company company = findCompanyByUserId(user.getId());
+        Company company = companyRepository.findAll().stream().findFirst().orElse(null);
 
         UserDetails userDetails =
                 customUserDetailsService
@@ -235,7 +227,7 @@ public class AuthServiceImpl implements AuthService {
         response.put("tokenType", "Bearer");
         response.put("role", user.getRole());
         response.put("user", userMap(user));
-        response.put("company", companySummaryMap(company));
+        response.put("company", company != null ? companySummaryMap(company) : null);
         return mapper.toDto(response, AuthResponseDTO.class);
     }
 
@@ -247,9 +239,9 @@ public class AuthServiceImpl implements AuthService {
         values.put("phone", user.getPhone());
         values.put("role", user.getRole());
         values.put("accountStatus", user.getAccountStatus());
-        values.put("active", user.getActive());
-        values.put("createdAt", user.getCreatedAt());
-        values.put("updatedAt", user.getUpdatedAt());
+        values.put("active", true);
+        values.put("createdAt", LocalDateTime.now());
+        values.put("updatedAt", LocalDateTime.now());
         return values;
     }
 
@@ -291,8 +283,6 @@ public class AuthServiceImpl implements AuthService {
             }
 
             CompanyCategory relation = new CompanyCategory();
-            relation.setCompany(company);
-            relation.setCategory(category);
             relations.add(relation);
         }
 
@@ -330,21 +320,6 @@ public class AuthServiceImpl implements AuthService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User account not found."
-                ));
-    }
-
-    private Company findCompanyByUserId(Long userId) {
-        return companyRepository.findAll()
-                .stream()
-                .filter(company ->
-                        company.getUser() != null
-                                && userId.equals(
-                                company.getUser().getId()
-                        )
-                )
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Company profile not found for this user."
                 ));
     }
 
