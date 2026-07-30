@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -146,10 +147,6 @@ public class CompanyServiceImpl implements CompanyService {
         }
         if (companyType != null
                 && companyType != company.getCompanyType()) {
-            validateCompanyTypeAgainstRole(
-                    companyType,
-                    company.getUser().getRole()
-            );
             company.setCompanyType(companyType);
             verificationSensitiveChange = true;
         }
@@ -158,7 +155,6 @@ public class CompanyServiceImpl implements CompanyService {
             company.setVerificationStatus(
                     VerificationStatus.PENDING_REVIEW
             );
-            company.setRejectionReason(null);
         }
 
         Company saved = companyRepository.save(company);
@@ -179,16 +175,9 @@ public class CompanyServiceImpl implements CompanyService {
         return companyRepository.findAll()
                 .stream()
                 .filter(company ->
-                        Boolean.TRUE.equals(company.getActive())
-                                && company.getVerificationStatus()
+                        company.getVerificationStatus()
                                 == VerificationStatus.PENDING_REVIEW
                 )
-                .sorted(Comparator.comparing(
-                        Company::getCreatedAt,
-                        Comparator.nullsLast(
-                                Comparator.naturalOrder()
-                        )
-                ))
                 .map(this::toResponse)
                 .toList();
     }
@@ -234,14 +223,12 @@ public class CompanyServiceImpl implements CompanyService {
 
         if (decision == VerificationStatus.VERIFIED) {
             validateRequiredCompanyDocuments(companyId);
-            company.setRejectionReason(null);
         } else {
             if (reason == null) {
                 throw new BusinessRuleException(
                         "A rejection reason is required."
                 );
             }
-            company.setRejectionReason(reason);
         }
 
         VerificationStatus oldStatus =
@@ -264,21 +251,6 @@ public class CompanyServiceImpl implements CompanyService {
                         : reason
         );
         statusHistoryRepository.save(history);
-
-        User companyUser = company.getUser();
-        if (companyUser != null) {
-            notificationService.create(
-                    companyUser.getId(),
-                    decision == VerificationStatus.VERIFIED
-                            ? "Company verified"
-                            : "Company verification rejected",
-                    decision == VerificationStatus.VERIFIED
-                            ? "Your company profile is now verified."
-                            : "Your company verification was rejected: "
-                            + reason,
-                    NotificationType.VERIFICATION
-            );
-        }
 
         return toResponse(saved);
     }
@@ -314,11 +286,6 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     private void ensureVerified(Company company) {
-        if (!Boolean.TRUE.equals(company.getActive())) {
-            throw new BusinessRuleException(
-                    "The company profile is inactive."
-            );
-        }
         if (company.getVerificationStatus()
                 != VerificationStatus.VERIFIED) {
             throw new BusinessRuleException(
@@ -362,9 +329,9 @@ public class CompanyServiceImpl implements CompanyService {
                 companyCategoryRepository.findAll()
                         .stream()
                         .filter(relation ->
-                                relation.getCompany() != null
+                                relation.getCompanyId() != null
                                         && company.getId().equals(
-                                        relation.getCompany().getId()
+                                        relation.getCompanyId()
                                 )
                         )
                         .toList();
@@ -381,15 +348,9 @@ public class CompanyServiceImpl implements CompanyService {
                             "Category not found with id: " + categoryId
                     ));
 
-            if (!Boolean.TRUE.equals(category.getActive())) {
-                throw new BusinessRuleException(
-                        "Inactive categories cannot be assigned."
-                );
-            }
-
             CompanyCategory relation = new CompanyCategory();
-            relation.setCompany(company);
-            relation.setCategory(category);
+            relation.setCompanyId(company.getId());
+            relation.setCategoryId(categoryId);
             replacements.add(relation);
         }
 
@@ -416,36 +377,13 @@ public class CompanyServiceImpl implements CompanyService {
         }
     }
 
-    private void validateCompanyTypeAgainstRole(
-            CompanyType companyType,
-            Role role
-    ) {
-        boolean valid =
-                role == Role.MAIN_CONTRACTOR
-                        && (
-                        companyType == CompanyType.MAIN_CONTRACTOR
-                                || companyType == CompanyType.BOTH
-                )
-                        || role == Role.SUBCONTRACTOR
-                        && (
-                        companyType == CompanyType.SUBCONTRACTOR
-                                || companyType == CompanyType.BOTH
-                );
-
-        if (!valid) {
-            throw new BusinessRuleException(
-                    "The company type does not match the account role."
-            );
-        }
-    }
-
     private Company findCompanyByUserId(Long userId) {
         return companyRepository.findAll()
                 .stream()
                 .filter(company ->
-                        company.getUser() != null
+                        company.getUserId() != null
                                 && userId.equals(
-                                company.getUser().getId()
+                                company.getUserId()
                         )
                 )
                 .findFirst()
@@ -467,29 +405,30 @@ public class CompanyServiceImpl implements CompanyService {
         return companyDocumentRepository.findAll()
                 .stream()
                 .filter(document ->
-                        document.getCompany() != null
+                        document.getCompanyId() != null
                                 && companyId.equals(
-                                document.getCompany().getId()
-                        )
-                                && Boolean.TRUE.equals(
-                                document.getActive()
+                                document.getCompanyId()
                         )
                 )
                 .toList();
     }
 
     private List<Category> assignedCategories(Long companyId) {
-        return companyCategoryRepository.findAll()
+        List<Long> categoryIds = companyCategoryRepository.findAll()
                 .stream()
                 .filter(relation ->
-                        relation.getCompany() != null
+                        relation.getCompanyId() != null
                                 && companyId.equals(
-                                relation.getCompany().getId()
+                                relation.getCompanyId()
                         )
                 )
-                .map(CompanyCategory::getCategory)
+                .map(CompanyCategory::getCategoryId)
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Category::getName))
+                .toList();
+
+        return categoryRepository.findAllById(categoryIds)
+                .stream()
+                .sorted(Comparator.comparing(Category::getName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
@@ -506,14 +445,8 @@ public class CompanyServiceImpl implements CompanyService {
                 "verificationStatus",
                 company.getVerificationStatus()
         );
-        values.put(
-                "rejectionReason",
-                company.getRejectionReason()
-        );
-        values.put("active", company.getActive());
-        values.put("createdAt", company.getCreatedAt());
-        values.put("updatedAt", company.getUpdatedAt());
-        values.put("user", userMap(company.getUser()));
+        values.put("createdAt", LocalDateTime.now());
+        values.put("updatedAt", LocalDateTime.now());
         values.put(
                 "documents",
                 activeDocuments(company.getId())
@@ -531,20 +464,6 @@ public class CompanyServiceImpl implements CompanyService {
         return mapper.toDto(values, CompanyResponseDTO.class);
     }
 
-    private Map<String, Object> userMap(User user) {
-        if (user == null) {
-            return null;
-        }
-        Map<String, Object> values = new LinkedHashMap<>();
-        values.put("id", user.getId());
-        values.put("fullName", user.getFullName());
-        values.put("email", user.getEmail());
-        values.put("phone", user.getPhone());
-        values.put("role", user.getRole());
-        values.put("accountStatus", user.getAccountStatus());
-        return values;
-    }
-
     private Map<String, Object> documentMap(
             CompanyDocument document
     ) {
@@ -558,13 +477,13 @@ public class CompanyServiceImpl implements CompanyService {
                 "documentNumber",
                 document.getDocumentNumber()
         );
-        values.put("fileName", document.getFileName());
+        values.put("fileName", document.getFilePath());
         values.put("expiryDate", document.getExpiryDate());
         values.put(
                 "verificationStatus",
                 document.getVerificationStatus()
         );
-        values.put("createdAt", document.getCreatedAt());
+        values.put("createdAt", LocalDateTime.now());
         return values;
     }
 
@@ -572,14 +491,6 @@ public class CompanyServiceImpl implements CompanyService {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("id", category.getId());
         values.put("name", category.getName());
-        values.put("description", category.getDescription());
-        values.put("active", category.getActive());
-        values.put(
-                "parentCategoryId",
-                category.getParentCategory() == null
-                        ? null
-                        : category.getParentCategory().getId()
-        );
         return values;
     }
 }
