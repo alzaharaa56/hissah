@@ -1,6 +1,3 @@
-/*
- * Commit message: feat(repository): add dynamic work package opportunity filters
- */
 package com.hissah.Repositories.Specifications;
 
 import com.hissah.DTO.Request.WorkPackageSearchRequestDTO;
