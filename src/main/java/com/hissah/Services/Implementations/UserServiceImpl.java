@@ -27,7 +27,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponseDTO getCurrentUser(Long userId) {
-        return toResponse(getUser(userId));
+        User user = findUserOrThrow(userId);
+        return toResponse(user);
     }
 
     @Override
@@ -36,17 +37,49 @@ public class UserServiceImpl implements UserService {
             Long userId,
             UserUpdateRequestDTO request
     ) {
-        User user = getUser(userId);
+        User user = findUserOrThrow(userId);
 
         String fullName = mapper.text(request, "fullName");
         String phone = mapper.text(request, "phone");
-        String currentPassword = mapper.text(
-                request,
-                "currentPassword",
-                "oldPassword"
-        );
-        String newPassword = mapper.text(
-                request,
-                "newPassword",
-                "password"
-        );
+
+        if (fullName != null && !fullName.isBlank()) {
+            user.setFullName(fullName.trim());
+        }
+        if (phone != null && !phone.isBlank()) {
+            user.setPhone(phone.trim());
+        }
+
+        String currentPassword = mapper.text(request, "currentPassword", "oldPassword");
+        String newPassword = mapper.text(request, "newPassword", "password");
+
+        if (newPassword != null && !newPassword.isBlank()) {
+            if (currentPassword == null || currentPassword.isBlank()) {
+                throw new BusinessRuleException("Current password is required to set a new password.");
+            }
+            if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+                throw new BusinessRuleException("Incorrect current password.");
+            }
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+        }
+
+        User updatedUser = userRepository.save(user);
+        return toResponse(updatedUser);
+    }
+
+    private User findUserOrThrow(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+    }
+
+    private UserResponseDTO toResponse(User user) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("id", user.getId());
+        values.put("fullName", user.getFullName());
+        values.put("email", user.getEmail());
+        values.put("phone", user.getPhone());
+        values.put("role", user.getRole());
+        values.put("accountStatus", user.getAccountStatus());
+        values.put("createdAt", user.getCreatedAt());
+        return mapper.toDto(values, UserResponseDTO.class);
+    }
+}

@@ -47,11 +47,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.Enumset;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -63,7 +60,7 @@ public class BidServiceImpl implements BidService {
     private static final int MAX_DOCUMENTS_PER_BID = 5;
 
     private static final Set<BidStatus> ACTIVE_DUPLICATE_STATUSES =
-            Enumset.of(
+            EnumSet.of(
                     BidStatus.DRAFT,
                     BidStatus.SUBMITTED,
                     BidStatus.SHORTLISTED,
@@ -71,7 +68,7 @@ public class BidServiceImpl implements BidService {
             );
 
     private static final Set<BidStatus> COMPARISON_STATUSES =
-            Enumset.of(
+            EnumSet.of(
                     BidStatus.SUBMITTED,
                     BidStatus.SHORTLISTED,
                     BidStatus.REJECTED,

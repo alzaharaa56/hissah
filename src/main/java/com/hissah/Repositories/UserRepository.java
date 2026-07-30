@@ -1,6 +1,5 @@
 package com.hissah.Repositories;
 
-
 import com.hissah.Entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,8 +11,12 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    Optional<User> findByIdAndActiveTrue(Long id);
+
+    Optional<User> findByEmailAndActiveTrue(String email);
+
+    boolean existsByEmailAndActiveTrue(String email);
 
     @Query("SELECT u FROM User u WHERE u.email = :email")
     Optional<User> findUserByEmail(@Param("email") String email);
-
 }
