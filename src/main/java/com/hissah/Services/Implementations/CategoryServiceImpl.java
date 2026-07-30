@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,26 +34,11 @@ public class CategoryServiceImpl implements CategoryService {
                 mapper.text(request, "name", "categoryName"),
                 "Category name"
         );
-        String description = mapper.text(
-                request,
-                "description"
-        );
-        Long parentCategoryId = mapper.longValue(
-                request,
-                "parentCategoryId",
-                "parentId"
-        );
 
         ensureNameAvailable(name, null);
 
         Category category = new Category();
         category.setName(name);
-        category.setDescription(description);
-        category.setParentCategory(
-                parentCategoryId == null
-                        ? null
-                        : getActiveCategory(parentCategoryId)
-        );
         category.setActive(true);
 
         return toResponse(categoryRepository.save(category));
@@ -71,40 +57,11 @@ public class CategoryServiceImpl implements CategoryService {
                 "name",
                 "categoryName"
         );
-        String description = mapper.text(
-                request,
-                "description"
-        );
-        Long parentCategoryId = mapper.longValue(
-                request,
-                "parentCategoryId",
-                "parentId"
-        );
 
         if (name != null
                 && !name.equalsIgnoreCase(category.getName())) {
             ensureNameAvailable(name, categoryId);
             category.setName(name);
-        }
-        if (description != null) {
-            category.setDescription(description);
-        }
-        if (parentCategoryId != null) {
-            if (parentCategoryId.equals(categoryId)) {
-                throw new BusinessRuleException(
-                        "A category cannot be its own parent."
-                );
-            }
-
-            Category parent =
-                    getActiveCategory(parentCategoryId);
-
-            if (isDescendant(parent, categoryId)) {
-                throw new BusinessRuleException(
-                        "The selected parent creates a category cycle."
-                );
-            }
-            category.setParentCategory(parent);
         }
 
         return toResponse(categoryRepository.save(category));
@@ -114,26 +71,6 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public CategoryResponseDTO deactivate(Long categoryId) {
         Category category = getCategory(categoryId);
-
-        boolean activeChildExists =
-                categoryRepository.findAll()
-                        .stream()
-                        .anyMatch(child ->
-                                child.getParentCategory() != null
-                                        && categoryId.equals(
-                                        child.getParentCategory().getId()
-                                )
-                                        && Boolean.TRUE.equals(
-                                        child.getActive()
-                                )
-                        );
-
-        if (activeChildExists) {
-            throw new BusinessRuleException(
-                    "Deactivate or move the active child categories first."
-            );
-        }
-
         category.setActive(false);
         return toResponse(categoryRepository.save(category));
     }
@@ -199,21 +136,6 @@ public class CategoryServiceImpl implements CategoryService {
         }
     }
 
-    private boolean isDescendant(
-            Category possibleParent,
-            Long categoryId
-    ) {
-        Category current = possibleParent;
-
-        while (current != null) {
-            if (categoryId.equals(current.getId())) {
-                return true;
-            }
-            current = current.getParentCategory();
-        }
-        return false;
-    }
-
     private Category getCategory(Long categoryId) {
         return categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -221,37 +143,13 @@ public class CategoryServiceImpl implements CategoryService {
                 ));
     }
 
-    private Category getActiveCategory(Long categoryId) {
-        Category category = getCategory(categoryId);
-
-        if (!Boolean.TRUE.equals(category.getActive())) {
-            throw new BusinessRuleException(
-                    "The selected parent category is inactive."
-            );
-        }
-        return category;
-    }
-
     private CategoryResponseDTO toResponse(Category category) {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("id", category.getId());
         values.put("name", category.getName());
-        values.put("description", category.getDescription());
         values.put("active", category.getActive());
-        values.put(
-                "parentCategoryId",
-                category.getParentCategory() == null
-                        ? null
-                        : category.getParentCategory().getId()
-        );
-        values.put(
-                "parentCategoryName",
-                category.getParentCategory() == null
-                        ? null
-                        : category.getParentCategory().getName()
-        );
-        values.put("createdAt", category.getCreatedAt());
-        values.put("updatedAt", category.getUpdatedAt());
+        values.put("createdAt", LocalDateTime.now());
+        values.put("updatedAt", LocalDateTime.now());
         return mapper.toDto(values, CategoryResponseDTO.class);
     }
 
@@ -264,4 +162,3 @@ public class CategoryServiceImpl implements CategoryService {
         return value.trim();
     }
 }
-
