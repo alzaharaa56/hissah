@@ -164,7 +164,7 @@ public class CompanyDocumentServiceImpl implements CompanyDocumentService {
             String contentType = Files.probeContentType(storedPath);
             long fileSize = Files.size(storedPath);
 
-            // استخراج اسم الملف الأصلي من المسار أو استخدام قيمة افتراضية
+
             String fileName = "document-" + document.getId();
 
             return new DownloadFile(
