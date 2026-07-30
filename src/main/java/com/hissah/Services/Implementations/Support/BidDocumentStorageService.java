@@ -1,6 +1,3 @@
-/*
- * Commit message: refactor(bid): extract bid document storage from BidServiceImpl
- */
 package com.hissah.Services.Implementations.Support;
 
 import com.hissah.DTO.Request.BidRequestDTO;
