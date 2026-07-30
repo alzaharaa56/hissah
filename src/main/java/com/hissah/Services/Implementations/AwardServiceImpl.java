@@ -27,6 +27,7 @@ import com.hissah.Repositories.UserRepository;
 import com.hissah.Repositories.WorkPackageRepository;
 import com.hissah.Services.AwardService;
 import com.hissah.Services.NotificationService;
+import com.hissah.Services.Implementations.Support.CompanyReferenceSupport;
 import com.hissah.Utilities.OwnershipValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -60,6 +61,7 @@ public class AwardServiceImpl implements AwardService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final OwnershipValidator ownershipValidator;
+    private final CompanyReferenceSupport companyReferenceSupport;
 
     @Override
     @Transactional
@@ -296,8 +298,7 @@ public class AwardServiceImpl implements AwardService {
         Long contractorCompanyId =
                 award.getWorkPackage()
                         .getProject()
-                        .getContractorCompany()
-                        .getId();
+                        .getContractorCompanyId();
 
         Long subcontractorCompanyId =
                 award.getBid()
@@ -316,9 +317,9 @@ public class AwardServiceImpl implements AwardService {
     private void notifyAwardWinner(Award award) {
         Company winner = award.getBid().getBidderCompany();
 
-        if (winner.getUser() != null) {
+        if (winner.getUserId() != null) {
             notificationService.create(
-                    winner.getUser().getId(),
+                    winner.getUserId(),
                     "Bid awarded",
                     "Congratulations. Your bid "
                             + award.getBid().getReferenceNumber()
@@ -333,9 +334,9 @@ public class AwardServiceImpl implements AwardService {
     private void notifyRejectedBidder(Bid bid) {
         Company bidder = bid.getBidderCompany();
 
-        if (bidder.getUser() != null) {
+        if (bidder.getUserId() != null) {
             notificationService.create(
-                    bidder.getUser().getId(),
+                    bidder.getUserId(),
                     "Bid result",
                     "Your bid "
                             + bid.getReferenceNumber()
@@ -370,7 +371,7 @@ public class AwardServiceImpl implements AwardService {
         WorkPackage workPackage = award.getWorkPackage();
         Company subcontractor = bid.getBidderCompany();
         Company contractor =
-                workPackage.getProject().getContractorCompany();
+                companyReferenceSupport.requireProjectContractor(workPackage.getProject());
 
         List<MilestoneResponseDTO> milestones =
                 milestoneRepository
