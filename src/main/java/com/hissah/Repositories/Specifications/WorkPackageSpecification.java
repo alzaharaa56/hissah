@@ -4,7 +4,7 @@
 package com.hissah.Repositories.Specifications;
 
 import com.hissah.DTO.Request.WorkPackageSearchRequestDTO;
-import com.hissah.entities.WorkPackage;
+import com.hissah.Entities.WorkPackage;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
