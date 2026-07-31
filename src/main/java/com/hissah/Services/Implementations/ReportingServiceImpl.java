@@ -19,6 +19,7 @@ import com.hissah.Repositories.CompanyRepository;
 import com.hissah.Repositories.MilestoneRepository;
 import com.hissah.Repositories.ProjectRepository;
 import com.hissah.Repositories.WorkPackageRepository;
+import com.hissah.Services.Implementations.Support.CompanyReferenceSupport;
 import com.hissah.Services.NotificationService;
 import com.hissah.Services.ReportingService;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class ReportingServiceImpl implements ReportingService {
     private final AwardRepository awardRepository;
     private final MilestoneRepository milestoneRepository;
     private final NotificationService notificationService;
+    private final CompanyReferenceSupport companyReferenceSupport;
 
     @Override
     public DashboardResponseDTO getDashboard(
@@ -399,7 +401,7 @@ public class ReportingServiceImpl implements ReportingService {
             WorkPackage workPackage
     ) {
         Company contractor =
-                workPackage.getProject().getContractorCompany();
+                companyReferenceSupport.requireProjectContractor(workPackage.getProject());
 
         return WorkPackageSummaryResponseDTO.builder()
                 .id(workPackage.getId())
