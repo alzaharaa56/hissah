@@ -22,24 +22,39 @@ public class OwnershipValidator {
     }
 
     public void validateProjectOwnership(Long currentCompanyId, Project project) {
-        if (project == null || project.getContractorCompany() == null) {
-            throw new UnauthorizedOperationException("The project owner could not be identified.");
+        if (project == null || project.getContractorCompanyId() == null) {
+            throw new UnauthorizedOperationException(
+                    "The project owner could not be identified."
+            );
         }
-        validateCompanyOwnership(currentCompanyId, project.getContractorCompany().getId());
+        validateCompanyOwnership(
+                currentCompanyId,
+                project.getContractorCompanyId()
+        );
     }
 
-    public void validateWorkPackageOwnership(Long currentCompanyId, WorkPackage workPackage) {
+    public void validateWorkPackageOwnership(
+            Long currentCompanyId,
+            WorkPackage workPackage
+    ) {
         if (workPackage == null || workPackage.getProject() == null) {
-            throw new UnauthorizedOperationException("The work-package owner could not be identified.");
+            throw new UnauthorizedOperationException(
+                    "The work-package owner could not be identified."
+            );
         }
         validateProjectOwnership(currentCompanyId, workPackage.getProject());
     }
 
     public void validateBidOwnership(Long currentCompanyId, Bid bid) {
         if (bid == null || bid.getBidderCompany() == null) {
-            throw new UnauthorizedOperationException("The bid owner could not be identified.");
+            throw new UnauthorizedOperationException(
+                    "The bid owner could not be identified."
+            );
         }
-        validateCompanyOwnership(currentCompanyId, bid.getBidderCompany().getId());
+        validateCompanyOwnership(
+                currentCompanyId,
+                bid.getBidderCompany().getId()
+        );
     }
 
     public void validateAdminOrCompanyOwner(
