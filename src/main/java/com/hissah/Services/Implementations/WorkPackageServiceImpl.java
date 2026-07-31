@@ -21,6 +21,7 @@ import com.hissah.Repositories.StatusHistoryRepository;
 import com.hissah.Repositories.UserRepository;
 import com.hissah.Repositories.WorkPackageRepository;
 import com.hissah.Repositories.Specifications.WorkPackageSpecification;
+import com.hissah.Services.Implementations.Support.CompanyReferenceSupport;
 import com.hissah.Services.WorkPackageService;
 import com.hissah.Utilities.OwnershipValidator;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,7 @@ public class WorkPackageServiceImpl implements WorkPackageService {
     private final StatusHistoryRepository statusHistoryRepository;
     private final UserRepository userRepository;
     private final OwnershipValidator ownershipValidator;
+    private final CompanyReferenceSupport companyReferenceSupport;
 
     @Override
     @Transactional
@@ -66,7 +68,7 @@ public class WorkPackageServiceImpl implements WorkPackageService {
     ) {
         Project project = getProject(request.getProjectId());
         ownershipValidator.validateProjectOwnership(currentCompanyId, project);
-        validateContractorCompany(project.getContractorCompany());
+        validateContractorCompany(companyReferenceSupport.requireProjectContractor(project));
         Category category = getCategory(request.getCategoryId());
         validateRequest(request);
 
@@ -108,7 +110,7 @@ public class WorkPackageServiceImpl implements WorkPackageService {
                 getOwnedWorkPackage(workPackageId, currentCompanyId, false);
 
         validateContractorCompany(
-                workPackage.getProject().getContractorCompany()
+                companyReferenceSupport.requireProjectContractor(workPackage.getProject())
         );
 
         if (workPackage.getStatus() != WorkPackageStatus.DRAFT) {
@@ -119,7 +121,7 @@ public class WorkPackageServiceImpl implements WorkPackageService {
 
         Project project = getProject(request.getProjectId());
         ownershipValidator.validateProjectOwnership(currentCompanyId, project);
-        validateContractorCompany(project.getContractorCompany());
+        validateContractorCompany(companyReferenceSupport.requireProjectContractor(project));
         Category category = getCategory(request.getCategoryId());
         validateRequest(request);
 
@@ -149,7 +151,7 @@ public class WorkPackageServiceImpl implements WorkPackageService {
                 getOwnedWorkPackage(workPackageId, currentCompanyId, true);
 
         validateContractorCompany(
-                workPackage.getProject().getContractorCompany()
+                companyReferenceSupport.requireProjectContractor(workPackage.getProject())
         );
 
         if (workPackage.getStatus() != WorkPackageStatus.DRAFT) {
@@ -427,7 +429,7 @@ public class WorkPackageServiceImpl implements WorkPackageService {
     ) {
         Project project = workPackage.getProject();
         Category category = workPackage.getCategory();
-        Company contractor = project.getContractorCompany();
+        Company contractor = companyReferenceSupport.requireProjectContractor(project);
 
         long bidCount =
                 bidRepository.countByWorkPackageIdAndActiveTrue(
@@ -476,7 +478,7 @@ public class WorkPackageServiceImpl implements WorkPackageService {
     ) {
         Project project = workPackage.getProject();
         Category category = workPackage.getCategory();
-        Company contractor = project.getContractorCompany();
+        Company contractor = companyReferenceSupport.requireProjectContractor(project);
 
         return WorkPackageSummaryResponseDTO.builder()
                 .id(workPackage.getId())
@@ -506,14 +508,7 @@ public class WorkPackageServiceImpl implements WorkPackageService {
     }
 
     private String companyName(Company company) {
-        if (company == null) {
-            return null;
-        }
-        if (company.getTradingName() != null
-                && !company.getTradingName().isBlank()) {
-            return company.getTradingName();
-        }
-        return company.getLegalName();
+        return companyReferenceSupport.companyName(company);
     }
 
     private String generateReference(String prefix) {
