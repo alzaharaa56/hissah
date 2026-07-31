@@ -21,6 +21,7 @@ import com.hissah.Repositories.StatusHistoryRepository;
 import com.hissah.Repositories.UserRepository;
 import com.hissah.Services.MilestoneService;
 import com.hissah.Services.NotificationService;
+import com.hissah.Services.Implementations.Support.CompanyReferenceSupport;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,7 @@ public class MilestoneServiceImpl implements MilestoneService {
     private final StatusHistoryRepository statusHistoryRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final CompanyReferenceSupport companyReferenceSupport;
 
     @Override
     @Transactional
@@ -413,8 +415,7 @@ public class MilestoneServiceImpl implements MilestoneService {
         Long ownerId =
                 award.getWorkPackage()
                         .getProject()
-                        .getContractorCompany()
-                        .getId();
+                        .getContractorCompanyId();
 
         if (!ownerId.equals(contractorCompanyId)) {
             throw new UnauthorizedOperationException(
@@ -447,8 +448,7 @@ public class MilestoneServiceImpl implements MilestoneService {
         Long contractorId =
                 award.getWorkPackage()
                         .getProject()
-                        .getContractorCompany()
-                        .getId();
+                        .getContractorCompanyId();
 
         Long subcontractorId =
                 award.getBid()
@@ -470,13 +470,13 @@ public class MilestoneServiceImpl implements MilestoneService {
             String message
     ) {
         Company contractor =
-                award.getWorkPackage()
-                        .getProject()
-                        .getContractorCompany();
+                companyReferenceSupport.requireProjectContractor(
+                        award.getWorkPackage().getProject()
+                );
 
-        if (contractor.getUser() != null) {
+        if (contractor.getUserId() != null) {
             notificationService.create(
-                    contractor.getUser().getId(),
+                    contractor.getUserId(),
                     title,
                     message,
                     NotificationType.MILESTONE
@@ -492,9 +492,9 @@ public class MilestoneServiceImpl implements MilestoneService {
         Company subcontractor =
                 award.getBid().getBidderCompany();
 
-        if (subcontractor.getUser() != null) {
+        if (subcontractor.getUserId() != null) {
             notificationService.create(
-                    subcontractor.getUser().getId(),
+                    subcontractor.getUserId(),
                     title,
                     message,
                     NotificationType.MILESTONE
