@@ -441,11 +441,7 @@ public class AwardServiceImpl implements AwardService {
     }
 
     private String companyName(Company company) {
-        if (company.getTradingName() != null
-                && !company.getTradingName().isBlank()) {
-            return company.getTradingName();
-        }
-        return company.getLegalName();
+        return companyReferenceSupport.companyName(company);
     }
 
     private String generateReference(String prefix) {
