@@ -1,22 +1,27 @@
 package com.hissah.DTO.Request;
 
-import com.hissah.Entities.User;
-import com.hissah.Enums.Role;
-import com.hissah.Enums.AccountStatus;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class UserUpdateRequestDTO {
-    private String fullName;
-    private String phone;
-    private Role role;
-    private AccountStatus accountStatus;
 
-    public void updateEntity(User user) {
-        if (user == null) return;
-        if (this.fullName != null) user.setFullName(this.fullName);
-        if (this.phone != null) user.setPhone(this.phone);
-        if (this.role != null) user.setRole(this.role);
-        if (this.accountStatus != null) user.setAccountStatus(this.accountStatus);
+    @Size(max = 120, message = "Full name must not exceed 120 characters.")
+    private String fullName;
+
+    @Size(max = 20, message = "Phone number must not exceed 20 characters.")
+    private String phone;
+
+    private String currentPassword;
+
+    @Size(min = 8, max = 100, message = "New password must be between 8 and 100 characters.")
+    private String newPassword;
+
+    @AssertTrue(message = "Current password is required when setting a new password.")
+    public boolean isPasswordChangeValid() {
+        return newPassword == null
+                || newPassword.isBlank()
+                || (currentPassword != null && !currentPassword.isBlank());
     }
 }
