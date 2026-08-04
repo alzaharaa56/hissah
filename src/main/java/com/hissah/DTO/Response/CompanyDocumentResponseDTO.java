@@ -6,6 +6,7 @@ import com.hissah.Enums.VerificationStatus;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class CompanyDocumentResponseDTO {
@@ -16,6 +17,8 @@ public class CompanyDocumentResponseDTO {
     private VerificationStatus verificationStatus;
     private Long companyId;
     private String downloadUrl;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static CompanyDocumentResponseDTO fromEntity(CompanyDocument document) {
         if (document == null) return null;
@@ -28,6 +31,8 @@ public class CompanyDocumentResponseDTO {
         response.setCompanyId(document.getCompanyId());
 
         response.setDownloadUrl("/api/companies/documents/" + document.getId() + "/download");
+        response.setCreatedAt(document.getCreatedAt());
+        response.setUpdatedAt(document.getUpdatedAt());
         return response;
     }
 }
