@@ -16,12 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -31,14 +26,11 @@ import java.util.List;
 @Validated
 public class AwardController {
 
-    private final ControllerPrincipalSupport principalSupport;
     private final AwardService awardService;
     private final BidService bidService;
     private final RequestValidationSupport requestValidationSupport;
 
-    @PostMapping(
-            "/work-packages/{workPackageId}/award/{bidId}"
-    )
+    @PostMapping("/work-packages/{workPackageId}/award/{bidId}")
     @PreAuthorize("hasRole('MAIN_CONTRACTOR')")
     public ResponseEntity<AwardResponseDTO> awardBid(
             @PathVariable @Positive Long workPackageId,
@@ -46,10 +38,9 @@ public class AwardController {
             @RequestBody AwardRequestDTO request,
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+
         Long contractorCompanyId =
-                principalSupport.requireCompanyId(
-                        principal
-                );
+                ControllerPrincipalSupport.requireCompanyId(principal);
 
         BidResponseDTO selectedBid =
                 bidService.getById(
@@ -57,8 +48,7 @@ public class AwardController {
                         contractorCompanyId
                 );
 
-        if (!workPackageId.equals(
-                selectedBid.getWorkPackageId())) {
+        if (!workPackageId.equals(selectedBid.getWorkPackageId())) {
             throw new BusinessRuleException(
                     "The selected bid does not belong to the specified work package."
             );
@@ -71,9 +61,7 @@ public class AwardController {
                 awardService.awardBid(
                         request,
                         contractorCompanyId,
-                        principalSupport.requireUserId(
-                                principal
-                        )
+                        ControllerPrincipalSupport.requireUserId(principal)
                 );
 
         return ResponseEntity
@@ -89,12 +77,11 @@ public class AwardController {
             @PathVariable @Positive Long awardId,
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+
         return ResponseEntity.ok(
                 awardService.getById(
                         awardId,
-                        principalSupport.requireCompanyId(
-                                principal
-                        )
+                        ControllerPrincipalSupport.requireCompanyId(principal)
                 )
         );
     }
@@ -107,12 +94,11 @@ public class AwardController {
             @PathVariable @Positive Long workPackageId,
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+
         return ResponseEntity.ok(
                 awardService.getByWorkPackage(
                         workPackageId,
-                        principalSupport.requireCompanyId(
-                                principal
-                        )
+                        ControllerPrincipalSupport.requireCompanyId(principal)
                 )
         );
     }
@@ -124,11 +110,10 @@ public class AwardController {
     public ResponseEntity<List<AwardResponseDTO>> getMyAwards(
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+
         return ResponseEntity.ok(
                 awardService.getMyAwards(
-                        principalSupport.requireCompanyId(
-                                principal
-                        )
+                        ControllerPrincipalSupport.requireCompanyId(principal)
                 )
         );
     }
