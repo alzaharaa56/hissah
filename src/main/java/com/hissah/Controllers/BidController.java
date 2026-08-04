@@ -49,7 +49,7 @@ import java.util.List;
 @Validated
 public class BidController {
 
-    private final ControllerPrincipalSupport principalSupport;
+
     private final BidService bidService;
     private final RequestValidationSupport requestValidationSupport;
 
@@ -69,10 +69,10 @@ public class BidController {
         BidResponseDTO response =
                 bidService.createDraft(
                         request,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 );
@@ -98,10 +98,10 @@ public class BidController {
         BidResponseDTO response =
                 bidService.submitNew(
                         request,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 );
@@ -122,7 +122,7 @@ public class BidController {
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         Long companyId =
-                principalSupport.requireCompanyId(
+                ControllerPrincipalSupport.requireCompanyId(
                         principal
                 );
 
@@ -139,7 +139,7 @@ public class BidController {
                         bidId,
                         request,
                         companyId,
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -155,10 +155,10 @@ public class BidController {
         return ResponseEntity.ok(
                 bidService.submitDraft(
                         bidId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -174,10 +174,10 @@ public class BidController {
         return ResponseEntity.ok(
                 bidService.withdraw(
                         bidId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -227,7 +227,7 @@ public class BidController {
         return ResponseEntity.ok(
                 bidService.getById(
                         bidId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         )
                 )
@@ -247,7 +247,7 @@ public class BidController {
     ) {
         return ResponseEntity.ok(
                 bidService.getMyBids(
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
                         pageable
@@ -265,7 +265,7 @@ public class BidController {
         return ResponseEntity.ok(
                 bidService.compareForWorkPackage(
                         workPackageId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         )
                 )
@@ -284,7 +284,7 @@ public class BidController {
         BidDocumentDownloadDTO document =
                 bidService.downloadDocument(
                         documentId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         )
                 );
@@ -364,10 +364,10 @@ public class BidController {
                 bidService.decide(
                         bidId,
                         decision,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
