@@ -1,60 +1,73 @@
 package com.hissah.Controllers;
+
+import com.hissah.Controllers.support.ControllerPrincipalSupport;
 import com.hissah.DTO.Request.CompanyRequestDTO;
-import com.hissah.DTO.Request.CompanyVerificationRequestDTO;
 import com.hissah.DTO.Response.CompanyResponseDTO;
-import com.hissah.Enums.Role;
+import com.hissah.Security.CustomUserPrincipal;
 import com.hissah.Services.CompanyService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/companies")
 @RequiredArgsConstructor
+@Validated
 public class CompanyController {
 
     private final CompanyService companyService;
 
     @GetMapping("/me")
-    public ResponseEntity<CompanyResponseDTO> getCurrentCompany(@RequestParam Long userId) {
-        CompanyResponseDTO response = companyService.getCurrentCompany(userId);
-        return ResponseEntity.ok(response);
+    @PreAuthorize("hasAnyRole('MAIN_CONTRACTOR','SUBCONTRACTOR')")
+    public ResponseEntity<CompanyResponseDTO> getCurrentCompany(
+            @AuthenticationPrincipal CustomUserPrincipal principal
+    ) {
+        return ResponseEntity.ok(
+                companyService.getCurrentCompany(
+                        ControllerPrincipalSupport.requireUserId(principal)
+                )
+        );
     }
 
     @GetMapping("/{companyId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CompanyResponseDTO> getById(
-            @PathVariable Long companyId,
-            @RequestParam Long currentCompanyId,
-            @RequestParam Role currentRole
+            @PathVariable @Positive Long companyId,
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
-        CompanyResponseDTO response = companyService.getById(companyId, currentCompanyId, currentRole);
-        return ResponseEntity.ok(response);
+        CustomUserPrincipal authenticated =
+                ControllerPrincipalSupport.requirePrincipal(principal);
+
+        return ResponseEntity.ok(
+                companyService.getById(
+                        companyId,
+                        authenticated.getCompanyId(),
+                        ControllerPrincipalSupport.requireRole(authenticated)
+                )
+        );
     }
 
     @PutMapping("/me")
+    @PreAuthorize("hasAnyRole('MAIN_CONTRACTOR','SUBCONTRACTOR')")
     public ResponseEntity<CompanyResponseDTO> updateCurrentCompany(
-            @RequestParam Long companyId,
-            @RequestBody CompanyRequestDTO request
+            @Valid @RequestBody CompanyRequestDTO request,
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
-        CompanyResponseDTO response = companyService.updateCurrentCompany(companyId, request);
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/pending")
-    public ResponseEntity<List<CompanyResponseDTO>> getPendingCompanies() {
-        List<CompanyResponseDTO> response = companyService.getPendingCompanies();
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/{companyId}/verify")
-    public ResponseEntity<CompanyResponseDTO> verifyCompany(
-            @PathVariable Long companyId,
-            @RequestBody CompanyVerificationRequestDTO request,
-            @RequestParam Long adminUserId
-    ) {
-        CompanyResponseDTO response = companyService.verifyCompany(companyId, request, adminUserId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                companyService.updateCurrentCompany(
+                        ControllerPrincipalSupport.requireCompanyId(principal),
+                        request
+                )
+        );
     }
 }
