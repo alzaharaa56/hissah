@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 680">
+<defs><linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8e0a8"/><stop offset="1" stop-color="#78a886"/></linearGradient></defs>
+<rect width="900" height="680" rx="42" fill="url(#sky)"/><circle cx="720" cy="130" r="70" fill="#faf6f0" opacity=".65"/>
+<path d="M0 520 180 390l150 95 150-150 170 110 250-170v405H0Z" fill="#4a7c59" opacity=".25"/>
+<path d="M570 170v330h16V170zm-80 38h250v18H490zm70 0-110 120 14 12 110-120z" fill="#2e3230" opacity=".75"/>
+<g transform="translate(160 315)"><rect x="0" y="80" width="320" height="190" rx="18" fill="#f5f1ea"/><rect x="35" y="120" width="76" height="150" fill="#c4a66a"/><rect x="145" y="120" width="60" height="62" fill="#78a886"/><rect x="225" y="120" width="60" height="62" fill="#78a886"/><path d="m-15 80 175-115L335 80Z" fill="#705c30"/></g>
+<g transform="translate(525 410)"><circle cx="45" cy="24" r="24" fill="#e8b596"/><path d="M10 52h70l28 108H-18Z" fill="#f4d34b"/><rect x="18" y="55" width="55" height="15" fill="#2e3230"/><path d="m20 18 25-16 27 17-7 10H27z" fill="#f4d34b"/></g>
+<g transform="translate(655 425)"><circle cx="40" cy="24" r="24" fill="#c98f6d"/><path d="M8 53h64l30 107H-20Z" fill="#4a7c59"/><path d="m15 18 25-16 27 17-7 10H22z" fill="#f4d34b"/></g>
+<rect x="515" y="520" width="190" height="120" rx="16" fill="#fff" opacity=".85"/><path d="M545 575h130M545 600h95M545 550h80" stroke="#4a7c59" stroke-width="10" stroke-linecap="round"/>
+</svg>

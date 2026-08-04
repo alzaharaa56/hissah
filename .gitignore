@@ -1,13 +1,13 @@
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
+hissahBackend/.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 .env
-uploads/*
-!uploads/.gitkeep
+hissahBackend/uploads/*
+!hissahBackend/uploads/.gitkeep
 *.log
-.idea/
+hissahBackend/.idea/
 *.iml
 ### STS ###
 .apt_generated
@@ -19,7 +19,7 @@ uploads/*
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+hissahBackend/.idea
 *.iws
 *.iml
 *.ipr

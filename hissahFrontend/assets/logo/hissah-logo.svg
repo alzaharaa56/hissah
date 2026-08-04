@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 150" role="img" aria-labelledby="title desc">
+<title id="title">Hissah logo</title><desc id="desc">Bilingual Hissah and حِصَّة logo with an Omani inspired woven mark.</desc>
+<rect width="560" height="150" rx="28" fill="#FAF6F0"/>
+<g transform="translate(218 19)">
+ <path d="M58 3 88 31 69 50 39 22Z" fill="#4A7C59"/><path d="m91 31 30 28-20 20-30-29z" fill="#C4A66A"/>
+ <path d="m101 81-29 29-20-20 30-29z" fill="#4A7C59"/><path d="m50 111-30-29 20-20 30 29z" fill="#705C30"/>
+ <path d="M17 59 45 31l20 20-29 28z" fill="#78A886"/><path d="m45 51 20-20 36 35-20 20z" fill="#2A6038"/>
+ <circle cx="17" cy="17" r="6" fill="#C4A66A"/><circle cx="119" cy="103" r="6" fill="#C4A66A"/>
+</g>
+<text x="34" y="94" font-family="Literata, Georgia, serif" font-weight="700" font-size="54" fill="#2A6038">Hissah</text>
+<text x="382" y="94" font-family="'Noto Kufi Arabic', Tahoma, sans-serif" font-weight="700" font-size="47" fill="#705C30">حِصَّة</text>
+</svg>
