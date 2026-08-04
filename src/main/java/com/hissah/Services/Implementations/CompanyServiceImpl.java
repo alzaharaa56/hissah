@@ -33,7 +33,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -155,6 +154,7 @@ public class CompanyServiceImpl implements CompanyService {
             company.setVerificationStatus(
                     VerificationStatus.PENDING_REVIEW
             );
+            company.setRejectionReason(null);
         }
 
         Company saved = companyRepository.save(company);
@@ -175,7 +175,8 @@ public class CompanyServiceImpl implements CompanyService {
         return companyRepository.findAll()
                 .stream()
                 .filter(company ->
-                        company.getVerificationStatus()
+                        Boolean.TRUE.equals(company.getActive())
+                                && company.getVerificationStatus()
                                 == VerificationStatus.PENDING_REVIEW
                 )
                 .map(this::toResponse)
@@ -235,6 +236,11 @@ public class CompanyServiceImpl implements CompanyService {
                 company.getVerificationStatus();
 
         company.setVerificationStatus(decision);
+        company.setRejectionReason(
+                decision == VerificationStatus.REJECTED
+                        ? reason
+                        : null
+        );
         Company saved = companyRepository.save(company);
 
         StatusHistory history = new StatusHistory();
@@ -381,7 +387,8 @@ public class CompanyServiceImpl implements CompanyService {
         return companyRepository.findAll()
                 .stream()
                 .filter(company ->
-                        company.getUserId() != null
+                        Boolean.TRUE.equals(company.getActive())
+                                && company.getUserId() != null
                                 && userId.equals(
                                 company.getUserId()
                         )
@@ -394,6 +401,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     private Company getCompany(Long companyId) {
         return companyRepository.findById(companyId)
+                .filter(company -> Boolean.TRUE.equals(company.getActive()))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Company not found with id: " + companyId
                 ));
@@ -405,7 +413,8 @@ public class CompanyServiceImpl implements CompanyService {
         return companyDocumentRepository.findAll()
                 .stream()
                 .filter(document ->
-                        document.getCompanyId() != null
+                        Boolean.TRUE.equals(document.getActive())
+                                && document.getCompanyId() != null
                                 && companyId.equals(
                                 document.getCompanyId()
                         )
@@ -445,8 +454,14 @@ public class CompanyServiceImpl implements CompanyService {
                 "verificationStatus",
                 company.getVerificationStatus()
         );
-        values.put("createdAt", LocalDateTime.now());
-        values.put("updatedAt", LocalDateTime.now());
+        values.put(
+                "rejectionReason",
+                company.getRejectionReason()
+        );
+        values.put("userId", company.getUserId());
+        values.put("active", company.getActive());
+        values.put("createdAt", company.getCreatedAt());
+        values.put("updatedAt", company.getUpdatedAt());
         values.put(
                 "documents",
                 activeDocuments(company.getId())
@@ -477,13 +492,21 @@ public class CompanyServiceImpl implements CompanyService {
                 "documentNumber",
                 document.getDocumentNumber()
         );
-        values.put("fileName", document.getFilePath());
+        values.put("fileName", document.getFileName());
         values.put("expiryDate", document.getExpiryDate());
         values.put(
                 "verificationStatus",
                 document.getVerificationStatus()
         );
-        values.put("createdAt", LocalDateTime.now());
+        values.put("companyId", document.getCompanyId());
+        values.put(
+                "downloadUrl",
+                "/api/company-documents/"
+                        + document.getId()
+                        + "/download"
+        );
+        values.put("createdAt", document.getCreatedAt());
+        values.put("updatedAt", document.getUpdatedAt());
         return values;
     }
 
@@ -491,6 +514,14 @@ public class CompanyServiceImpl implements CompanyService {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("id", category.getId());
         values.put("name", category.getName());
+        values.put("description", category.getDescription());
+        values.put(
+                "parentCategoryId",
+                category.getParentCategoryId()
+        );
+        values.put("active", category.getActive());
+        values.put("createdAt", category.getCreatedAt());
+        values.put("updatedAt", category.getUpdatedAt());
         return values;
     }
 }
