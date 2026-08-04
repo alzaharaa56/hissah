@@ -1,7 +1,7 @@
 package com.hissah.Services.Implementations.Support;
 
 import com.hissah.Exceptions.BusinessRuleException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
@@ -18,7 +18,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ServiceDtoMapper {
 
-    private final ObjectMapper objectMapper;
+    private final JsonMapper objectMapper;
 
     public String text(Object source, String... propertyNames) {
         Object value = firstValue(source, propertyNames);
