@@ -32,7 +32,6 @@ import java.util.Map;
 )
 public class NotificationController {
 
-    private final ControllerPrincipalSupport principalSupport;
     private final NotificationService notificationService;
 
     @GetMapping
@@ -47,7 +46,7 @@ public class NotificationController {
     ) {
         return ResponseEntity.ok(
                 notificationService.getForUser(
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         ),
                         pageable
@@ -61,7 +60,7 @@ public class NotificationController {
     ) {
         return ResponseEntity.ok(
                 notificationService.getRecent(
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -74,7 +73,7 @@ public class NotificationController {
     ) {
         long unreadCount =
                 notificationService.countUnread(
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 );
@@ -92,7 +91,7 @@ public class NotificationController {
         return ResponseEntity.ok(
                 notificationService.markAsRead(
                         notificationId,
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -105,7 +104,7 @@ public class NotificationController {
     ) {
         int updatedCount =
                 notificationService.markAllAsRead(
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 );
