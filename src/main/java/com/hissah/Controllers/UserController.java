@@ -1,13 +1,20 @@
 package com.hissah.Controllers;
 
+import com.hissah.Controllers.support.ControllerPrincipalSupport;
 import com.hissah.DTO.Request.UserUpdateRequestDTO;
 import com.hissah.DTO.Response.UserResponseDTO;
+import com.hissah.Security.CustomUserPrincipal;
 import com.hissah.Services.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
@@ -17,24 +24,28 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponseDTO> getCurrentUser(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(required = false) Long userId
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
-        Long currentUserId = userId != null ? userId : 1L;
-
-        UserResponseDTO response = userService.getCurrentUser(currentUserId);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                userService.getCurrentUser(
+                        ControllerPrincipalSupport.requireUserId(principal)
+                )
+        );
     }
 
     @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponseDTO> updateCurrentUser(
-            @RequestParam(required = false) Long userId,
-            @RequestBody UserUpdateRequestDTO request
+            @Valid @RequestBody UserUpdateRequestDTO request,
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
-        Long currentUserId = userId != null ? userId : 1L;
-
-        UserResponseDTO response = userService.updateCurrentUser(currentUserId, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                userService.updateCurrentUser(
+                        ControllerPrincipalSupport.requireUserId(principal),
+                        request
+                )
+        );
     }
 }
