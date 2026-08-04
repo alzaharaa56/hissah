@@ -1,12 +1,14 @@
 package com.hissah.DTO.Response;
 
-import com.hissah.Entities.Project;
+import com.hissah.Enums.ProjectStatus;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class ProjectResponseDTO {
+
     private Long id;
     private String title;
     private String referenceNumber;
@@ -15,22 +17,10 @@ public class ProjectResponseDTO {
     private String description;
     private LocalDate startDate;
     private LocalDate endDate;
-    private CompanySummaryResponseDTO contractorCompany;
-    private Integer packageCount;
-
-    public static ProjectResponseDTO fromEntity(Project project, CompanySummaryResponseDTO contractorSummary, Integer packageCount) {
-        if (project == null) return null;
-        ProjectResponseDTO response = new ProjectResponseDTO();
-        response.setId(project.getId());
-        response.setTitle(project.getTitle());
-        response.setReferenceNumber(project.getReferenceNumber());
-        response.setSector(project.getSector());
-        response.setLocation(project.getLocation());
-        response.setDescription(project.getDescription());
-        response.setStartDate(project.getStartDate());
-        response.setEndDate(project.getEndDate());
-        response.setContractorCompany(contractorSummary);
-        response.setPackageCount(packageCount != null ? packageCount : 0);
-        return response;
-    }
+    private ProjectStatus status;
+    private Long contractorCompanyId;
+    private CompanySummaryResponseDTO contractor;
+    private Integer workPackageCount;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
