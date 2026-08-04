@@ -12,23 +12,32 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface CompanyRepository extends JpaRepository<Company, Long> {
+public interface CompanyRepository
+        extends JpaRepository<Company, Long> {
 
-    Optional<Company> findByIdAndActiveTrue(Long id);
 
-    List<Company> findByVerificationStatusAndActiveTrue(VerificationStatus verificationStatus);
+    List<Company> findByVerificationStatus(
+            VerificationStatus verificationStatus
+    );
 
-    boolean existsByCrNumberAndActiveTrue(String crNumber);
+    boolean existsByCrNumberIgnoreCase(String crNumber);
 
-    boolean existsByUserIdAndActiveTrue(Long userId);
+    boolean existsByUserId(Long userId);
 
-    @Query("SELECT comp FROM Company comp WHERE comp.crNumber = :crNumber")
-    Optional<Company> findCompanyByCrNumber(@Param("crNumber") String crNumber);
+    Optional<Company> findByCrNumberIgnoreCase(
+            String crNumber
+    );
 
-    @Query("SELECT comp FROM Company comp WHERE comp.userId = :userId")
-    Optional<Company> findCompanyByUserId(@Param("userId") Long userId);
+    Optional<Company> findByUserId(Long userId);
 
     @Modifying
-    @Query("UPDATE Company comp SET comp.verificationStatus = :status WHERE comp.id = :companyId")
-    int updateVerificationStatus(@Param("companyId") Long companyId, @Param("status") VerificationStatus status);
+    @Query("""
+            UPDATE Company company
+            SET company.verificationStatus = :status
+            WHERE company.id = :companyId
+            """)
+    int updateVerificationStatus(
+            @Param("companyId") Long companyId,
+            @Param("status") VerificationStatus status
+    );
 }
