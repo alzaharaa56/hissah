@@ -1,6 +1,7 @@
 package com.hissah.Services.Implementations;
 
 import com.hissah.DTO.Request.ProjectRequestDTO;
+import com.hissah.DTO.Response.CompanySummaryResponseDTO;
 import com.hissah.DTO.Response.ProjectResponseDTO;
 import com.hissah.DTO.Response.ProjectSummaryResponseDTO;
 import com.hissah.Entities.Company;
@@ -11,6 +12,7 @@ import com.hissah.Enums.HistoryEntityType;
 import com.hissah.Enums.ProjectSector;
 import com.hissah.Enums.ProjectStatus;
 import com.hissah.Enums.Role;
+import com.hissah.Enums.WorkPackageStatus;
 import com.hissah.Exceptions.BusinessRuleException;
 import com.hissah.Exceptions.DuplicateResourceException;
 import com.hissah.Exceptions.ResourceNotFoundException;
@@ -22,7 +24,6 @@ import com.hissah.Repositories.UserRepository;
 import com.hissah.Repositories.WorkPackageRepository;
 import com.hissah.Services.CompanyService;
 import com.hissah.Services.ProjectService;
-import com.hissah.Services.Implementations.Support.ServiceDtoMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -33,9 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -49,7 +48,6 @@ public class ProjectServiceImpl implements ProjectService {
     private final StatusHistoryRepository statusHistoryRepository;
     private final UserRepository userRepository;
     private final CompanyService companyService;
-    private final ServiceDtoMapper mapper;
 
     @Override
     @Transactional
@@ -58,29 +56,38 @@ public class ProjectServiceImpl implements ProjectService {
             Long contractorCompanyId,
             Long currentUserId
     ) {
-        companyService.ensureVerifiedMainContractor(contractorCompanyId);
-        Company contractor = getCompany(contractorCompanyId);
+        companyService.ensureVerifiedMainContractor(
+                contractorCompanyId
+        );
 
+        Company contractor = getCompany(contractorCompanyId);
         ProjectData data = readProjectData(request);
+
         validateDates(data.startDate(), data.endDate());
-        ensureTitleAvailable(contractorCompanyId, data.title(), null);
+        ensureTitleAvailable(
+                contractorCompanyId,
+                data.title(),
+                null
+        );
 
         Project project = new Project();
         project.setTitle(data.title());
         project.setReferenceNumber(generateReference());
-        project.setSector(data.sector() != null ? data.sector().name() : null);
+        project.setSector(data.sector());
         project.setLocation(data.location());
         project.setDescription(data.description());
         project.setStartDate(data.startDate());
         project.setEndDate(data.endDate());
+        project.setStatus(ProjectStatus.DRAFT);
         project.setContractorCompanyId(contractor.getId());
+        project.setActive(true);
 
         Project saved = projectRepository.save(project);
 
         recordHistory(
                 saved.getId(),
                 null,
-                ProjectStatus.DRAFT.name(),
+                saved.getStatus().name(),
                 currentUserId,
                 "Project created as draft."
         );
@@ -96,14 +103,33 @@ public class ProjectServiceImpl implements ProjectService {
             Long contractorCompanyId,
             Long currentUserId
     ) {
-        Project project = getOwnedProjectEntity(projectId, contractorCompanyId);
+        companyService.ensureVerifiedMainContractor(
+                contractorCompanyId
+        );
+
+        Project project = getOwnedProjectEntity(
+                projectId,
+                contractorCompanyId
+        );
+
+        if (project.getStatus() == ProjectStatus.COMPLETED
+                || project.getStatus() == ProjectStatus.CANCELLED) {
+            throw new BusinessRuleException(
+                    "A completed or cancelled project cannot be edited."
+            );
+        }
 
         ProjectData data = readProjectData(request);
+
         validateDates(data.startDate(), data.endDate());
-        ensureTitleAvailable(contractorCompanyId, data.title(), projectId);
+        ensureTitleAvailable(
+                contractorCompanyId,
+                data.title(),
+                projectId
+        );
 
         project.setTitle(data.title());
-        project.setSector(data.sector() != null ? data.sector().name() : null);
+        project.setSector(data.sector());
         project.setLocation(data.location());
         project.setDescription(data.description());
         project.setStartDate(data.startDate());
@@ -113,8 +139,8 @@ public class ProjectServiceImpl implements ProjectService {
 
         recordHistory(
                 saved.getId(),
-                ProjectStatus.DRAFT.name(),
-                ProjectStatus.DRAFT.name(),
+                saved.getStatus().name(),
+                saved.getStatus().name(),
                 currentUserId,
                 "Project details updated."
         );
@@ -129,8 +155,20 @@ public class ProjectServiceImpl implements ProjectService {
             Long contractorCompanyId,
             Long currentUserId
     ) {
-        companyService.ensureVerifiedMainContractor(contractorCompanyId);
-        Project project = getOwnedProjectEntity(projectId, contractorCompanyId);
+        companyService.ensureVerifiedMainContractor(
+                contractorCompanyId
+        );
+
+        Project project = getOwnedProjectEntity(
+                projectId,
+                contractorCompanyId
+        );
+
+        if (project.getStatus() != ProjectStatus.DRAFT) {
+            throw new BusinessRuleException(
+                    "Only a draft project can be activated."
+            );
+        }
 
         if (project.getEndDate().isBefore(LocalDate.now())) {
             throw new BusinessRuleException(
@@ -138,12 +176,15 @@ public class ProjectServiceImpl implements ProjectService {
             );
         }
 
+        ProjectStatus oldStatus = project.getStatus();
+        project.setStatus(ProjectStatus.ACTIVE);
+
         Project saved = projectRepository.save(project);
 
         recordHistory(
                 saved.getId(),
-                ProjectStatus.DRAFT.name(),
-                ProjectStatus.ACTIVE.name(),
+                oldStatus.name(),
+                saved.getStatus().name(),
                 currentUserId,
                 "Project activated."
         );
@@ -158,29 +199,44 @@ public class ProjectServiceImpl implements ProjectService {
             Long contractorCompanyId,
             Long currentUserId
     ) {
-        Project project = getOwnedProjectEntity(projectId, contractorCompanyId);
+        companyService.ensureVerifiedMainContractor(
+                contractorCompanyId
+        );
 
-        boolean unfinishedPackageExists =
-                workPackageRepository
-                        .findByProjectIdAndActiveTrueOrderByCreatedAtDesc(projectId)
-                        .stream()
-                        .anyMatch(workPackage ->
-                                workPackage.getStatus().name().equals("OPEN")
-                                        || workPackage.getStatus().name().equals("UNDER_EVALUATION")
-                        );
+        Project project = getOwnedProjectEntity(
+                projectId,
+                contractorCompanyId
+        );
+
+        if (project.getStatus() != ProjectStatus.ACTIVE) {
+            throw new BusinessRuleException(
+                    "Only an active project can be completed."
+            );
+        }
+
+        boolean unfinishedPackageExists = workPackageRepository
+                .findByProjectIdAndActiveTrueOrderByCreatedAtDesc(projectId)
+                .stream()
+                .anyMatch(workPackage ->
+                        workPackage.getStatus() != WorkPackageStatus.AWARDED
+                                && workPackage.getStatus() != WorkPackageStatus.CANCELLED
+                );
 
         if (unfinishedPackageExists) {
             throw new BusinessRuleException(
-                    "Close or award all open work packages before completing the project."
+                    "Close or award all work packages before completing the project."
             );
         }
+
+        ProjectStatus oldStatus = project.getStatus();
+        project.setStatus(ProjectStatus.COMPLETED);
 
         Project saved = projectRepository.save(project);
 
         recordHistory(
                 saved.getId(),
-                ProjectStatus.ACTIVE.name(),
-                ProjectStatus.COMPLETED.name(),
+                oldStatus.name(),
+                saved.getStatus().name(),
                 currentUserId,
                 "Project completed."
         );
@@ -196,30 +252,54 @@ public class ProjectServiceImpl implements ProjectService {
             Long contractorCompanyId,
             Long currentUserId
     ) {
-        Project project = getOwnedProjectEntity(projectId, contractorCompanyId);
+        companyService.ensureVerifiedMainContractor(
+                contractorCompanyId
+        );
 
-        boolean awardedPackageExists =
-                workPackageRepository
-                        .findByProjectIdAndActiveTrueOrderByCreatedAtDesc(projectId)
-                        .stream()
-                        .anyMatch(workPackage ->
-                                workPackage.getStatus().name().equals("AWARDED")
-                        );
+        Project project = getOwnedProjectEntity(
+                projectId,
+                contractorCompanyId
+        );
 
-        if (awardedPackageExists) {
+        if (project.getStatus() == ProjectStatus.COMPLETED) {
             throw new BusinessRuleException(
-                    "A project with awarded work packages cannot be cancelled."
+                    "A completed project cannot be cancelled."
             );
         }
+
+        if (project.getStatus() == ProjectStatus.CANCELLED) {
+            throw new BusinessRuleException(
+                    "The project is already cancelled."
+            );
+        }
+
+        boolean nonCancellablePackageExists = workPackageRepository
+                .findByProjectIdAndActiveTrueOrderByCreatedAtDesc(projectId)
+                .stream()
+                .anyMatch(workPackage ->
+                        workPackage.getStatus() != WorkPackageStatus.DRAFT
+                                && workPackage.getStatus() != WorkPackageStatus.CANCELLED
+                );
+
+        if (nonCancellablePackageExists) {
+            throw new BusinessRuleException(
+                    "Cancel the active procurement workflow before cancelling the project."
+            );
+        }
+
+        ProjectStatus oldStatus = project.getStatus();
+        project.setStatus(ProjectStatus.CANCELLED);
 
         Project saved = projectRepository.save(project);
 
         recordHistory(
                 saved.getId(),
-                null,
-                ProjectStatus.CANCELLED.name(),
+                oldStatus.name(),
+                saved.getStatus().name(),
                 currentUserId,
-                reason == null || reason.isBlank() ? "Project cancelled." : reason.trim()
+                reason == null || reason.isBlank()
+                        ? "Project cancelled."
+                        : reason.trim()
         );
 
         return toResponse(saved);
@@ -251,26 +331,40 @@ public class ProjectServiceImpl implements ProjectService {
             Long contractorCompanyId,
             Pageable pageable
     ) {
-        List<ProjectSummaryResponseDTO> all =
-                projectRepository.findAll()
-                        .stream()
-                        .filter(project ->
-                                project.getContractorCompanyId() != null
-                                        && contractorCompanyId.equals(project.getContractorCompanyId())
+        List<ProjectSummaryResponseDTO> all = projectRepository.findAll()
+                .stream()
+                .filter(project ->
+                        Boolean.TRUE.equals(project.getActive())
+                                && contractorCompanyId.equals(
+                                project.getContractorCompanyId()
                         )
-                        .sorted(
-                                Comparator.comparing(
-                                        Project::getId,
-                                        Comparator.nullsLast(Comparator.reverseOrder())
+                )
+                .sorted(
+                        Comparator.comparing(
+                                Project::getCreatedAt,
+                                Comparator.nullsLast(
+                                        Comparator.reverseOrder()
                                 )
                         )
-                        .map(this::toSummary)
-                        .toList();
+                )
+                .map(this::toSummary)
+                .toList();
 
-        int start = Math.min((int) pageable.getOffset(), all.size());
-        int end = Math.min(start + pageable.getPageSize(), all.size());
+        int start = Math.min(
+                (int) pageable.getOffset(),
+                all.size()
+        );
 
-        return new PageImpl<>(all.subList(start, end), pageable, all.size());
+        int end = Math.min(
+                start + pageable.getPageSize(),
+                all.size()
+        );
+
+        return new PageImpl<>(
+                all.subList(start, end),
+                pageable,
+                all.size()
+        );
     }
 
     @Override
@@ -281,7 +375,9 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = getProject(projectId);
 
         if (project.getContractorCompanyId() == null
-                || !contractorCompanyId.equals(project.getContractorCompanyId())) {
+                || !contractorCompanyId.equals(
+                project.getContractorCompanyId()
+        )) {
             throw new UnauthorizedOperationException(
                     "You do not own this project."
             );
@@ -291,26 +387,56 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private ProjectData readProjectData(ProjectRequestDTO request) {
-        String title = required(mapper.text(request, "title"), "Project title");
-        ProjectSector sector = mapper.enumValue(request, ProjectSector.class, "sector");
-        String location = required(mapper.text(request, "location"), "Project location");
-        String description = mapper.text(request, "description");
-        LocalDate startDate = mapper.dateValue(request, "startDate");
-        LocalDate endDate = mapper.dateValue(request, "endDate");
+        String title = required(
+                request.getTitle(),
+                "Project title"
+        );
 
-        if (sector == null) {
-            throw new BusinessRuleException("Project sector is required.");
+        String sector = required(
+                request.getSector(),
+                "Project sector"
+        ).toUpperCase();
+
+        try {
+            ProjectSector.valueOf(sector);
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessRuleException(
+                    "Invalid project sector: " + sector
+            );
         }
+
+        String location = required(
+                request.getLocation(),
+                "Project location"
+        );
+
+        LocalDate startDate = request.getStartDate();
+        LocalDate endDate = request.getEndDate();
+
         if (startDate == null || endDate == null) {
-            throw new BusinessRuleException("Project start and end dates are required.");
+            throw new BusinessRuleException(
+                    "Project start and end dates are required."
+            );
         }
 
-        return new ProjectData(title, sector, location, description, startDate, endDate);
+        return new ProjectData(
+                title,
+                sector,
+                location,
+                trimToNull(request.getDescription()),
+                startDate,
+                endDate
+        );
     }
 
-    private void validateDates(LocalDate startDate, LocalDate endDate) {
+    private void validateDates(
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
         if (endDate.isBefore(startDate)) {
-            throw new BusinessRuleException("Project end date cannot be before the start date.");
+            throw new BusinessRuleException(
+                    "Project end date cannot be before the start date."
+            );
         }
     }
 
@@ -322,9 +448,12 @@ public class ProjectServiceImpl implements ProjectService {
         boolean duplicate = projectRepository.findAll()
                 .stream()
                 .anyMatch(project ->
-                        (excludedProjectId == null || !excludedProjectId.equals(project.getId()))
-                                && project.getContractorCompanyId() != null
-                                && contractorCompanyId.equals(project.getContractorCompanyId())
+                        Boolean.TRUE.equals(project.getActive())
+                                && (excludedProjectId == null
+                                || !excludedProjectId.equals(project.getId()))
+                                && contractorCompanyId.equals(
+                                project.getContractorCompanyId()
+                        )
                                 && project.getTitle() != null
                                 && project.getTitle().equalsIgnoreCase(title)
                 );
@@ -344,7 +473,9 @@ public class ProjectServiceImpl implements ProjectService {
             String note
     ) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found with id: " + userId
+                ));
 
         StatusHistory history = new StatusHistory();
         history.setEntityType(HistoryEntityType.PROJECT);
@@ -353,92 +484,115 @@ public class ProjectServiceImpl implements ProjectService {
         history.setNewStatus(newStatus);
         history.setChangedBy(user);
         history.setNote(note);
+
         statusHistoryRepository.save(history);
     }
 
     private Company getCompany(Long companyId) {
         return companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + companyId));
+                .filter(company -> Boolean.TRUE.equals(company.getActive()))
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Company not found with id: " + companyId
+                ));
     }
 
     private Project getProject(Long projectId) {
         return projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+                .filter(project -> Boolean.TRUE.equals(project.getActive()))
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Project not found with id: " + projectId
+                ));
     }
 
     private ProjectResponseDTO toResponse(Project project) {
-        Company company = getCompany(project.getContractorCompanyId());
-        Map<String, Object> values = new LinkedHashMap<>();
-        values.put("id", project.getId());
-        values.put("title", project.getTitle());
-        values.put("referenceNumber", project.getReferenceNumber());
-        values.put("sector", project.getSector() != null ? ProjectSector.valueOf(project.getSector()) : null);
-        values.put("location", project.getLocation());
-        values.put("description", project.getDescription());
-        values.put("startDate", project.getStartDate());
-        values.put("endDate", project.getEndDate());
-        values.put("status", ProjectStatus.DRAFT);
-        values.put("contractor", companySummaryMap(company));
-        values.put("contractorCompanyId", project.getContractorCompanyId());
-        values.put(
-                "workPackageCount",
+        Company company = getCompany(
+                project.getContractorCompanyId()
+        );
+
+        ProjectResponseDTO response = new ProjectResponseDTO();
+        response.setId(project.getId());
+        response.setTitle(project.getTitle());
+        response.setReferenceNumber(project.getReferenceNumber());
+        response.setSector(project.getSector());
+        response.setLocation(project.getLocation());
+        response.setDescription(project.getDescription());
+        response.setStartDate(project.getStartDate());
+        response.setEndDate(project.getEndDate());
+        response.setStatus(project.getStatus());
+        response.setContractorCompanyId(
+                project.getContractorCompanyId()
+        );
+        response.setContractor(
+                CompanySummaryResponseDTO.fromEntity(company)
+        );
+        response.setWorkPackageCount(
                 workPackageRepository
-                        .findByProjectIdAndActiveTrueOrderByCreatedAtDesc(project.getId())
+                        .findByProjectIdAndActiveTrueOrderByCreatedAtDesc(
+                                project.getId()
+                        )
                         .size()
         );
-        values.put("createdAt", LocalDateTime.now());
-        values.put("updatedAt", LocalDateTime.now());
-        return mapper.toDto(values, ProjectResponseDTO.class);
+        response.setCreatedAt(project.getCreatedAt());
+        response.setUpdatedAt(project.getUpdatedAt());
+        return response;
     }
 
     private ProjectSummaryResponseDTO toSummary(Project project) {
-        Map<String, Object> values = new LinkedHashMap<>();
-        values.put("id", project.getId());
-        values.put("title", project.getTitle());
-        values.put("referenceNumber", project.getReferenceNumber());
-        values.put("sector", project.getSector() != null ? ProjectSector.valueOf(project.getSector()) : null);
-        values.put("location", project.getLocation());
-        values.put("startDate", project.getStartDate());
-        values.put("endDate", project.getEndDate());
-        values.put("status", ProjectStatus.DRAFT);
-        values.put(
-                "workPackageCount",
+        ProjectSummaryResponseDTO summary = new ProjectSummaryResponseDTO();
+        summary.setId(project.getId());
+        summary.setTitle(project.getTitle());
+        summary.setReferenceNumber(project.getReferenceNumber());
+        summary.setSector(project.getSector());
+        summary.setLocation(project.getLocation());
+        summary.setStartDate(project.getStartDate());
+        summary.setEndDate(project.getEndDate());
+        summary.setStatus(project.getStatus());
+        summary.setWorkPackageCount(
                 workPackageRepository
-                        .findByProjectIdAndActiveTrueOrderByCreatedAtDesc(project.getId())
+                        .findByProjectIdAndActiveTrueOrderByCreatedAtDesc(
+                                project.getId()
+                        )
                         .size()
         );
-        values.put("createdAt", LocalDateTime.now());
-        return mapper.toDto(values, ProjectSummaryResponseDTO.class);
-    }
-
-    private Map<String, Object> companySummaryMap(Company company) {
-        Map<String, Object> values = new LinkedHashMap<>();
-        values.put("id", company.getId());
-        values.put("legalName", company.getLegalName());
-        values.put("tradingName", company.getTradingName());
-        values.put("companyType", company.getCompanyType());
-        values.put("governorate", company.getGovernorate());
-        values.put("verificationStatus", company.getVerificationStatus());
-        return values;
+        summary.setCreatedAt(project.getCreatedAt());
+        return summary;
     }
 
     private String generateReference() {
         return "PRJ-"
                 + LocalDateTime.now().getYear()
                 + "-"
-                + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                + UUID.randomUUID()
+                .toString()
+                .substring(0, 8)
+                .toUpperCase();
     }
 
-    private String required(String value, String fieldName) {
+    private String required(
+            String value,
+            String fieldName
+    ) {
         if (value == null || value.isBlank()) {
-            throw new BusinessRuleException(fieldName + " is required.");
+            throw new BusinessRuleException(
+                    fieldName + " is required."
+            );
         }
+
         return value.trim();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private record ProjectData(
             String title,
-            ProjectSector sector,
+            String sector,
             String location,
             String description,
             LocalDate startDate,
