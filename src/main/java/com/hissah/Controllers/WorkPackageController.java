@@ -45,8 +45,6 @@ public class WorkPackageController {
                     WorkPackageStatus.DRAFT,
                     WorkPackageStatus.CANCELLED
             );
-
-    private final ControllerPrincipalSupport principalSupport;
     private final WorkPackageService workPackageService;
     private final RequestValidationSupport requestValidationSupport;
 
@@ -63,10 +61,10 @@ public class WorkPackageController {
         WorkPackageResponseDTO response =
                 workPackageService.create(
                         request,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 );
@@ -87,10 +85,10 @@ public class WorkPackageController {
                 workPackageService.update(
                         workPackageId,
                         request,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -106,10 +104,10 @@ public class WorkPackageController {
         return ResponseEntity.ok(
                 workPackageService.publish(
                         workPackageId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -125,10 +123,10 @@ public class WorkPackageController {
         return ResponseEntity.ok(
                 workPackageService.close(
                         workPackageId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -150,10 +148,10 @@ public class WorkPackageController {
                 workPackageService.cancel(
                         workPackageId,
                         reason,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -178,7 +176,7 @@ public class WorkPackageController {
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         CustomUserPrincipal authenticated =
-                principalSupport.requirePrincipal(
+                ControllerPrincipalSupport.requirePrincipal(
                         principal
                 );
         Long companyId = authenticated.getCompanyId();
@@ -207,7 +205,7 @@ public class WorkPackageController {
         return ResponseEntity.ok(
                 workPackageService.getByProject(
                         projectId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         )
                 )
@@ -219,7 +217,7 @@ public class WorkPackageController {
             CustomUserPrincipal principal
     ) {
         Role role =
-                principalSupport.requireRole(principal);
+                ControllerPrincipalSupport.requireRole(principal);
 
         if (!OWNER_ONLY_STATUSES.contains(
                 workPackage.getStatus())) {
