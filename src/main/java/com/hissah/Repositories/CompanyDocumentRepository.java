@@ -1,6 +1,7 @@
 package com.hissah.Repositories;
 
 import com.hissah.Entities.CompanyDocument;
+import com.hissah.Enums.DocumentType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,16 +11,27 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface CompanyDocumentRepository extends JpaRepository<CompanyDocument, Long> {
+public interface CompanyDocumentRepository
+        extends JpaRepository<CompanyDocument, Long> {
 
-    Optional<CompanyDocument> findByIdAndActiveTrue(Long id);
+    List<CompanyDocument> findByCompanyId(Long companyId);
 
-    List<CompanyDocument> findByCompanyIdAndActiveTrue(Long companyId);
+    Optional<CompanyDocument> findByCompanyIdAndDocumentType(
+            Long companyId,
+            DocumentType documentType
+    );
 
-    Optional<CompanyDocument> findByCompanyIdAndDocumentTypeAndActiveTrue(Long companyId, Enum documentType);
+    boolean existsByCompanyIdAndDocumentType(
+            Long companyId,
+            DocumentType documentType
+    );
 
-    boolean existsByCompanyIdAndDocumentTypeAndActiveTrue(Long companyId, Enum documentType);
-
-    @Query("SELECT cd FROM CompanyDocument cd WHERE cd.companyId = :companyId")
-    List<CompanyDocument> findDocumentsByCompanyId(@Param("companyId") Long companyId);
+    @Query("""
+            SELECT document
+            FROM CompanyDocument document
+            WHERE document.companyId = :companyId
+            """)
+    List<CompanyDocument> findDocumentsByCompanyId(
+            @Param("companyId") Long companyId
+    );
 }
