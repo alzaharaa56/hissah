@@ -1,9 +1,25 @@
+/*
+ * Commit message: fix(dto): use plain login password instead of persisted password hash
+ */
 package com.hissah.DTO.Request;
 
-import lombok.Data;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class LoginRequestDTO {
+
+    @NotBlank(message = "Email is required.")
+    @Email(message = "Enter a valid email address.")
     private String email;
-    private String passwordHash;
+
+    @NotBlank(message = "Password is required.")
+    private String password;
 }
