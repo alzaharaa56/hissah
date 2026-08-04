@@ -8,16 +8,12 @@ import com.hissah.Exceptions.DuplicateResourceException;
 import com.hissah.Exceptions.ResourceNotFoundException;
 import com.hissah.Repositories.CategoryRepository;
 import com.hissah.Services.CategoryService;
-import com.hissah.Services.Implementations.Support.ServiceDtoMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -25,23 +21,27 @@ import java.util.Map;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
-    private final ServiceDtoMapper mapper;
 
     @Override
     @Transactional
     public CategoryResponseDTO create(CategoryRequestDTO request) {
-        String name = required(
-                mapper.text(request, "name", "categoryName"),
-                "Category name"
-        );
-
+        String name = required(request.getName(), "Category name");
         ensureNameAvailable(name, null);
+        validateParentCategory(request.getParentCategoryId(), null);
 
         Category category = new Category();
         category.setName(name);
-        category.setActive(true);
+        category.setDescription(trimToNull(request.getDescription()));
+        category.setParentCategoryId(request.getParentCategoryId());
+        category.setActive(
+                request.getActive() != null
+                        ? request.getActive()
+                        : true
+        );
 
-        return toResponse(categoryRepository.save(category));
+        return CategoryResponseDTO.fromEntity(
+                categoryRepository.save(category)
+        );
     }
 
     @Override
@@ -52,19 +52,30 @@ public class CategoryServiceImpl implements CategoryService {
     ) {
         Category category = getCategory(categoryId);
 
-        String name = mapper.text(
-                request,
-                "name",
-                "categoryName"
-        );
-
-        if (name != null
-                && !name.equalsIgnoreCase(category.getName())) {
-            ensureNameAvailable(name, categoryId);
-            category.setName(name);
+        if (request.getName() != null
+                && !request.getName().isBlank()
+                && !request.getName().trim().equalsIgnoreCase(category.getName())) {
+            String newName = request.getName().trim();
+            ensureNameAvailable(newName, categoryId);
+            category.setName(newName);
         }
 
-        return toResponse(categoryRepository.save(category));
+        if (request.getDescription() != null) {
+            category.setDescription(trimToNull(request.getDescription()));
+        }
+
+        if (request.getParentCategoryId() != null) {
+            validateParentCategory(request.getParentCategoryId(), categoryId);
+            category.setParentCategoryId(request.getParentCategoryId());
+        }
+
+        if (request.getActive() != null) {
+            category.setActive(request.getActive());
+        }
+
+        return CategoryResponseDTO.fromEntity(
+                categoryRepository.save(category)
+        );
     }
 
     @Override
@@ -72,28 +83,31 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponseDTO deactivate(Long categoryId) {
         Category category = getCategory(categoryId);
         category.setActive(false);
-        return toResponse(categoryRepository.save(category));
+
+        return CategoryResponseDTO.fromEntity(
+                categoryRepository.save(category)
+        );
     }
 
     @Override
     public CategoryResponseDTO getById(Long categoryId) {
-        return toResponse(getCategory(categoryId));
+        return CategoryResponseDTO.fromEntity(
+                getCategory(categoryId)
+        );
     }
 
     @Override
     public List<CategoryResponseDTO> getActiveCategories() {
         return categoryRepository.findAll()
                 .stream()
-                .filter(category ->
-                        Boolean.TRUE.equals(category.getActive())
-                )
+                .filter(category -> Boolean.TRUE.equals(category.getActive()))
                 .sorted(
                         Comparator.comparing(
                                 Category::getName,
                                 String.CASE_INSENSITIVE_ORDER
                         )
                 )
-                .map(this::toResponse)
+                .map(CategoryResponseDTO::fromEntity)
                 .toList();
     }
 
@@ -107,7 +121,7 @@ public class CategoryServiceImpl implements CategoryService {
                                 String.CASE_INSENSITIVE_ORDER
                         )
                 )
-                .map(this::toResponse)
+                .map(CategoryResponseDTO::fromEntity)
                 .toList();
     }
 
@@ -118,15 +132,10 @@ public class CategoryServiceImpl implements CategoryService {
         boolean duplicate = categoryRepository.findAll()
                 .stream()
                 .anyMatch(category ->
-                        (
-                                excludedCategoryId == null
-                                        || !excludedCategoryId.equals(
-                                        category.getId()
-                                )
-                        )
+                        (excludedCategoryId == null
+                                || !excludedCategoryId.equals(category.getId()))
                                 && category.getName() != null
-                                && category.getName()
-                                .equalsIgnoreCase(name)
+                                && category.getName().equalsIgnoreCase(name)
                 );
 
         if (duplicate) {
@@ -136,21 +145,32 @@ public class CategoryServiceImpl implements CategoryService {
         }
     }
 
+    private void validateParentCategory(
+            Long parentCategoryId,
+            Long currentCategoryId
+    ) {
+        if (parentCategoryId == null) {
+            return;
+        }
+
+        if (currentCategoryId != null
+                && currentCategoryId.equals(parentCategoryId)) {
+            throw new BusinessRuleException(
+                    "A category cannot be its own parent."
+            );
+        }
+
+        categoryRepository.findById(parentCategoryId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Parent category not found with id: " + parentCategoryId
+                ));
+    }
+
     private Category getCategory(Long categoryId) {
         return categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Category not found with id: " + categoryId
                 ));
-    }
-
-    private CategoryResponseDTO toResponse(Category category) {
-        Map<String, Object> values = new LinkedHashMap<>();
-        values.put("id", category.getId());
-        values.put("name", category.getName());
-        values.put("active", category.getActive());
-        values.put("createdAt", LocalDateTime.now());
-        values.put("updatedAt", LocalDateTime.now());
-        return mapper.toDto(values, CategoryResponseDTO.class);
     }
 
     private String required(String value, String fieldName) {
@@ -159,6 +179,16 @@ public class CategoryServiceImpl implements CategoryService {
                     fieldName + " is required."
             );
         }
+
         return value.trim();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
