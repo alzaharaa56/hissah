@@ -31,8 +31,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Validated
 public class MilestoneController {
-
-    private  final ControllerPrincipalSupport principalSupport;
     private final MilestoneService milestoneService;
     private final RequestValidationSupport requestValidationSupport;
 
@@ -49,10 +47,10 @@ public class MilestoneController {
         MilestoneResponseDTO response =
                 milestoneService.create(
                         request,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 );
@@ -79,10 +77,10 @@ public class MilestoneController {
                 milestoneService.update(
                         milestoneId,
                         request,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -101,10 +99,10 @@ public class MilestoneController {
                 milestoneService.updateProgress(
                         milestoneId,
                         request,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -120,10 +118,10 @@ public class MilestoneController {
         return ResponseEntity.ok(
                 milestoneService.submit(
                         milestoneId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -139,10 +137,10 @@ public class MilestoneController {
         return ResponseEntity.ok(
                 milestoneService.approve(
                         milestoneId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         ),
-                        principalSupport.requireUserId(
+                        ControllerPrincipalSupport.requireUserId(
                                 principal
                         )
                 )
@@ -160,7 +158,7 @@ public class MilestoneController {
         return ResponseEntity.ok(
                 milestoneService.getByAward(
                         awardId,
-                        principalSupport.requireCompanyId(
+                        ControllerPrincipalSupport.requireCompanyId(
                                 principal
                         )
                 )
