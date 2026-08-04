@@ -144,6 +144,11 @@ public class AuthServiceImpl implements AuthService {
         user.setPhone(phone);
         user.setRole(role);
         user.setAccountStatus(AccountStatus.ACTIVE);
+        user.setActive(true);
+        LocalDateTime now = LocalDateTime.now();
+
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
         User savedUser = userRepository.save(user);
 
         Company company = new Company();
@@ -156,6 +161,7 @@ public class AuthServiceImpl implements AuthService {
         company.setVerificationStatus(
                 VerificationStatus.PENDING_REVIEW
         );
+        company.setUserId(savedUser.getId());
         Company savedCompany = companyRepository.save(company);
 
         assignCategories(
@@ -205,7 +211,9 @@ public class AuthServiceImpl implements AuthService {
             );
         }
 
-        Company company = companyRepository.findAll().stream().findFirst().orElse(null);
+        Company company = companyRepository
+                .findByUserId(user.getId())
+                .orElse(null);
 
         UserDetails userDetails =
                 customUserDetailsService
@@ -270,7 +278,9 @@ public class AuthServiceImpl implements AuthService {
 
         List<CompanyCategory> relations = new ArrayList<>();
 
-        for (Long categoryId : categoryIds.stream().distinct().toList()) {
+        for (Long categoryId :
+                categoryIds.stream().distinct().toList()) {
+
             Category category = categoryRepository.findById(categoryId)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Category not found with id: " + categoryId
@@ -283,6 +293,10 @@ public class AuthServiceImpl implements AuthService {
             }
 
             CompanyCategory relation = new CompanyCategory();
+
+            relation.setCompanyId(company.getId());
+            relation.setCategoryId(category.getId());
+
             relations.add(relation);
         }
 
@@ -300,13 +314,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private boolean crNumberExists(String crNumber) {
-        return companyRepository.findAll()
-                .stream()
-                .anyMatch(company ->
-                        company.getCrNumber() != null
-                                && company.getCrNumber()
-                                .equalsIgnoreCase(crNumber)
-                );
+        return companyRepository
+                .existsByCrNumberIgnoreCase(crNumber);
     }
 
     private User findUserByEmail(String email) {
