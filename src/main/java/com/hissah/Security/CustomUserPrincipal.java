@@ -1,6 +1,7 @@
 package com.hissah.Security;
 
 import com.hissah.Entities.User;
+import com.hissah.Enums.AccountStatus;
 import com.hissah.Enums.Role;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,26 +12,45 @@ import java.util.Collections;
 
 public class CustomUserPrincipal implements UserDetails {
 
-    private final Long id;
+    private final Long userId;
     private final String email;
     private final String passwordHash;
     private final Long companyId;
     private final Role role;
+    private final boolean active;
+    private final AccountStatus accountStatus;
+
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public CustomUserPrincipal(User user, Long companyId) {
-        this.id = user.getId();
+    public CustomUserPrincipal(
+            User user,
+            Long companyId
+    ) {
+        this.userId = user.getId();
         this.email = user.getEmail();
         this.passwordHash = user.getPasswordHash();
         this.companyId = companyId;
         this.role = user.getRole();
+        this.active = Boolean.TRUE.equals(user.getActive());
+        this.accountStatus = user.getAccountStatus();
 
-        String roleName = (user.getRole() != null) ? user.getRole().name() : "USER";
-        this.authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + roleName));
+        String roleName = user.getRole() == null
+                ? "USER"
+                : user.getRole().name();
+
+        this.authorities = Collections.singletonList(
+                new SimpleGrantedAuthority(
+                        "ROLE_" + roleName
+                )
+        );
+    }
+
+    public Long getUserId() {
+        return userId;
     }
 
     public Long getId() {
-        return id;
+        return userId;
     }
 
     public Long getCompanyId() {
@@ -63,7 +83,7 @@ public class CustomUserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return accountStatus != AccountStatus.SUSPENDED;
     }
 
     @Override
@@ -73,6 +93,7 @@ public class CustomUserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return active
+                && accountStatus == AccountStatus.ACTIVE;
     }
 }
