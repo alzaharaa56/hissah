@@ -1,6 +1,6 @@
 package com.hissah.Security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -18,9 +18,9 @@ import java.util.Map;
 @Component
 public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
-    private final ObjectMapper objectMapper;
+    private final JsonMapper objectMapper;
 
-    public RestAccessDeniedHandler(ObjectMapper objectMapper) {
+    public RestAccessDeniedHandler(JsonMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
