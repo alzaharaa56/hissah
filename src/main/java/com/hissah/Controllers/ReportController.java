@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ReportController {
 
-    private final ControllerPrincipalSupport principalSupport;
     private final ReportingService reportingService;
 
     @GetMapping("/dashboard")
@@ -29,19 +28,19 @@ public class ReportController {
             @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
         Long userId =
-                principalSupport.requireUserId(
+                ControllerPrincipalSupport.requireUserId(
                         principal
                 );
 
         Role role =
-                principalSupport.requireRole(
+                ControllerPrincipalSupport.requireRole(
                         principal
                 );
 
         Long companyId =
                 role == Role.ADMIN
                         ? principal.getCompanyId()
-                        : principalSupport.requireCompanyId(
+                        : ControllerPrincipalSupport.requireCompanyId(
                         principal
                 );
 
