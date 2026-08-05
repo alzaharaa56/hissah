@@ -10,11 +10,8 @@ import org.springframework.web.client.RestClient;
 public class AiConfig {
 
     @Bean
-    public RestClient openAiRestClient(
-            RestClient.Builder builder,
-            AiProperties properties
-    ) {
-        return builder
+    public RestClient openAiRestClient(AiProperties properties) {
+        return RestClient.builder()
                 .baseUrl(properties.getBaseUrl())
                 .build();
     }
