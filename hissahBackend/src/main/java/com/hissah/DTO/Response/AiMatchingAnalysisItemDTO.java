@@ -1,0 +1,21 @@
+package com.hissah.DTO.Response;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class AiMatchingAnalysisItemDTO {
+
+    private Long companyId;
+    private Integer semanticScore;
+    private List<String> reasons = new ArrayList<>();
+    private List<String> possibleGaps = new ArrayList<>();
+}
