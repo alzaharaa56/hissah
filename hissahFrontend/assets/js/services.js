@@ -110,6 +110,15 @@ export const api = {
         body: b,
       }),
   },
+  ai: {
+    generateWorkPackage: (b) =>
+      request("/api/ai/work-packages/generate", { method: "POST", body: b }),
+    findSubcontractorMatches: (workPackageId, limit = 5) =>
+      request(
+        `/api/ai/work-packages/${workPackageId}/matches` + query({ limit }),
+      ),
+  },
+
   bids: {
     mine: (page = 0, size = 20) =>
       request(
