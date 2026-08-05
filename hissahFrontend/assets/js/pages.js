@@ -21,8 +21,595 @@ export async function contractorDashboard(){if(!requireAuth(['MAIN_CONTRACTOR'])
 export async function projects(){if(!requireAuth(['MAIN_CONTRACTOR']))return;mountApp('My Projects');const root=qs('#page-root');root.innerHTML=pageHeader('My Projects','Create and manage main-contract projects.',`<a class="btn btn-primary" href="${page('contractor/project-form.html')}">New project</a>`)+`<div id="projects" class="grid grid-3"></div>`;const el=qs('#projects');loading(el);try{const l=listOf(await api.projects.mine(session.company().id,0,50));el.innerHTML=l.length?l.map(p=>`<article class="card hover"><div class="row-between">${badge(p.status||'DRAFT')}<small>${esc(p.referenceNumber||'')}</small></div><h3>${esc(p.title)}</h3><p class="muted">📍 ${esc(p.location||'—')} · ${esc(p.sector||'OTHER')}</p><p>${date(p.startDate)} – ${date(p.endDate)}</p><a class="btn btn-primary btn-block" href="${page('contractor/project-details.html')}?id=${p.id}">Open project</a></article>`).join(''):empty('No projects created','Create a project before adding work packages.')}catch(e){err(el,e)}}
 export async function projectForm(){if(!requireAuth(['MAIN_CONTRACTOR']))return;mountApp('Project Form');const root=qs('#page-root'),id=idParam();root.innerHTML=pageHeader(id?'Edit Project':'Create Project','Define the parent project before publishing subcontracting packages.')+`<div class="card"><form id="project-form" class="form-grid"><div class="input-group span-2"><label>Project title</label><input class="input" name="title" required></div><div class="input-group"><label>Sector</label><select class="select" name="sector"><option>CONSTRUCTION</option><option>LOGISTICS</option><option>IT</option><option>MAINTENANCE</option><option>SUPPLY</option><option>OTHER</option></select></div><div class="input-group"><label>Location</label><input class="input" name="location" required></div><div class="input-group"><label>Start date</label><input class="input" type="date" name="startDate" required></div><div class="input-group"><label>End date</label><input class="input" type="date" name="endDate" required></div><div class="input-group span-2"><label>Description</label><textarea class="textarea" name="description"></textarea></div><button class="btn btn-primary">${id?'Update':'Create'} project</button></form></div>`;if(id)try{const d=await api.projects.get(id,session.company().id,session.role());Object.entries(d).forEach(([k,v])=>{const i=qs(`[name=${k}]`);if(i)i.value=v??''})}catch(e){toast(e.message,'error')}qs('#project-form').onsubmit=async e=>{e.preventDefault();try{const body=formObject(e.target),d=id?await api.projects.update(id,session.company().id,session.user().id,body):await api.projects.create(session.company().id,session.user().id,body);toast(id?'Project updated':'Project created');location.href=`${page('contractor/project-details.html')}?id=${d.id}`}catch(ex){toast(ex.message,'error')}}}
 export async function projectDetails(){if(!requireAuth(['MAIN_CONTRACTOR']))return;mountApp('Project Details');const root=qs('#page-root'),id=idParam();root.innerHTML=`<div id="project"></div><section class="card" style="margin-top:22px"><div class="row-between responsive"><div><h2>Work Packages</h2><p class="muted">Break this project into packages for subcontractor bidding.</p></div><a class="btn btn-primary" href="${page('contractor/work-package-form.html')}?projectId=${id}">Create package</a></div><div id="packages"></div></section>`;try{const p=await api.projects.get(id,session.company().id,session.role());qs('#project').innerHTML=pageHeader(p.title,p.referenceNumber||'',`<a class="btn btn-secondary" href="${page('contractor/project-form.html')}?id=${p.id}">Edit</a><button class="btn btn-primary project-action" data-action="activate">Activate</button><button class="btn btn-secondary project-action" data-action="complete">Complete</button>`)+`<div class="grid grid-4"><div class="card"><small>Status</small><div>${badge(p.status||'DRAFT')}</div></div><div class="card"><small>Sector</small><strong style="display:block">${esc(p.sector)}</strong></div><div class="card"><small>Location</small><strong style="display:block">${esc(p.location)}</strong></div><div class="card"><small>Timeline</small><strong style="display:block;font-size:.9rem">${date(p.startDate)} – ${date(p.endDate)}</strong></div></div><div class="card" style="margin-top:22px"><h3>Project description</h3><p>${esc(p.description||'No description')}</p></div>`;qsa('.project-action').forEach(b=>b.onclick=async()=>{try{await api.projects.action(id,b.dataset.action,session.company().id,session.user().id);toast(`Project ${b.dataset.action}d`);location.reload()}catch(e){toast(e.message,'error')}})}catch(e){err(qs('#project'),e)}const el=qs('#packages');loading(el);try{const l=listOf(await api.packages.byProject(id));el.innerHTML=l.length?`<div class="table-wrap"><table><thead><tr><th>Package</th><th>Budget</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody>${l.map(w=>`<tr><td><strong>${esc(w.title)}</strong><div class="help">${esc(w.location||'')}</div></td><td>${money(w.budgetMin)} – ${money(w.budgetMax)}</td><td>${date(w.deadline,true)}</td><td>${badge(w.status)}</td><td><a class="btn btn-secondary btn-sm" href="${page('contractor/work-package-form.html')}?id=${w.id}&projectId=${id}">Edit</a> ${w.status==='DRAFT'?`<button class="btn btn-primary btn-sm package-action" data-id="${w.id}" data-action="publish">Publish</button>`:''} <a class="btn btn-secondary btn-sm" href="${page('contractor/compare-bids.html')}?workPackageId=${w.id}">Bids</a></td></tr>`).join('')}</tbody></table></div>`:empty('No work packages','Create the first package for this project.');qsa('.package-action').forEach(b=>b.onclick=async()=>{try{await api.packages.action(b.dataset.id,b.dataset.action);toast('Package published');location.reload()}catch(e){toast(e.message,'error')}})}catch(e){err(el,e)}}
-export async function workPackageForm(){if(!requireAuth(['MAIN_CONTRACTOR']))return;mountApp('Work Package Form');const root=qs('#page-root'),id=idParam(),projectId=idParam('projectId');root.innerHTML=pageHeader(id?'Edit Work Package':'Create Work Package','Define scope, budget, deadline and SME eligibility.')+`<div class="card"><form id="package-form" class="form-grid"><input type="hidden" name="projectId" value="${projectId||''}"><div class="input-group span-2"><label>Package title</label><input class="input" name="title" required></div><div class="input-group"><label>Category</label><select class="select" name="categoryId" id="category-select" required><option value="">Loading categories…</option></select></div><div class="input-group"><label>Location</label><input class="input" name="location" required></div><div class="input-group"><label>Minimum budget (OMR)</label><input class="input" type="number" step="0.001" name="budgetMin" required></div><div class="input-group"><label>Maximum budget (OMR)</label><input class="input" type="number" step="0.001" name="budgetMax" required></div><div class="input-group"><label>Deadline</label><input class="input" type="datetime-local" name="deadline" required></div><div class="input-group"><label>Eligibility</label><select class="select" name="eligibilityType"><option>OPEN</option><option>SME_ONLY</option><option>RIYADA_PREFERRED</option><option>RIYADA_REQUIRED</option></select></div><div class="input-group span-2"><label>Scope</label><textarea class="textarea" name="scope" required></textarea></div><div class="input-group span-2"><label>Requirements</label><textarea class="textarea" name="requirements"></textarea></div><button class="btn btn-primary">${id?'Update':'Create'} package</button></form></div>`;try{const cats=listOf(await api.categories.active());qs('#category-select').innerHTML='<option value="">Choose category</option>'+cats.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(id){const d=await api.packages.get(id);Object.entries(d).forEach(([k,v])=>{const i=qs(`[name=${k}]`);if(i)i.value=(k==='deadline'&&v)?String(v).slice(0,16):v??''})}}catch(e){toast(e.message,'error')}qs('#package-form').onsubmit=async e=>{e.preventDefault();const b=formObject(e.target);b.categoryId=Number(b.categoryId);b.projectId=Number(b.projectId);b.budgetMin=Number(b.budgetMin);b.budgetMax=Number(b.budgetMax);try{const d=id?await api.packages.update(id,b):await api.packages.create(projectId,b);toast(id?'Package updated':'Package created');location.href=`${page('contractor/project-details.html')}?id=${d.projectId||projectId}`}catch(ex){toast(ex.message,'error')}}}
-export async function compareBids(){if(!requireAuth(['MAIN_CONTRACTOR']))return;mountApp('Compare Bids');const root=qs('#page-root'),wp=idParam('workPackageId');root.innerHTML=pageHeader('Compare Bids','Review submitted proposals and make a transparent award decision.')+`<div id="bids"></div><div id="modal"></div>`;const el=qs('#bids');loading(el);try{const l=listOf(await api.bids.forPackage(wp));el.innerHTML=l.length?`<div class="table-wrap"><table><thead><tr><th>Subcontractor</th><th>Amount</th><th>Delivery</th><th>Proposal</th><th>Status</th><th>Decision</th></tr></thead><tbody>${l.map(b=>`<tr><td><strong>${esc(b.companyName||b.subcontractorCompanyName||'Company #'+(b.subcontractorCompanyId||''))}</strong></td><td>${money(b.amount)}</td><td>${esc(b.deliveryDays||'—')} days</td><td>${esc((b.proposalText||'').slice(0,90))}</td><td>${badge(b.status)}</td><td><button class="btn btn-secondary btn-sm bid-action" data-id="${b.id}" data-action="shortlist">Shortlist</button> <button class="btn btn-primary btn-sm award-bid" data-id="${b.id}" data-amount="${b.amount||''}" data-days="${b.deliveryDays||''}">Award</button> <button class="btn btn-danger btn-sm bid-action" data-id="${b.id}" data-action="reject">Reject</button></td></tr>`).join('')}</tbody></table></div>`:empty('No bids received','Submitted bids will appear here.');qsa('.bid-action').forEach(b=>b.onclick=async()=>{const reason=prompt(`Reason for ${b.dataset.action}:`)||'';try{await api.bids.action(b.dataset.id,b.dataset.action,{reason});toast(`Bid ${b.dataset.action}ed`);location.reload()}catch(e){toast(e.message,'error')}});qsa('.award-bid').forEach(b=>b.onclick=()=>{qs('#modal').innerHTML=`<div class="modal-backdrop"><div class="modal"><div class="row-between"><h2>Award selected bid</h2><button class="icon-btn" id="close">×</button></div><form id="award-form" class="stack"><input type="hidden" name="bidId" value="${b.dataset.id}"><div class="input-group"><label>Agreed amount</label><input class="input" name="agreedAmount" type="number" step="0.001" value="${b.dataset.amount}" required></div><div class="input-group"><label>Agreed delivery days</label><input class="input" name="agreedDeliveryDays" type="number" value="${b.dataset.days}" required></div><div class="input-group"><label>Notes</label><textarea class="textarea" name="notes"></textarea></div><button class="btn btn-primary">Confirm award</button></form></div></div>`;qs('#close').onclick=()=>qs('#modal').innerHTML='';qs('#award-form').onsubmit=async e=>{e.preventDefault();const f=formObject(e.target);try{const a=await api.awards.create(wp,f.bidId,{agreedAmount:Number(f.agreedAmount),agreedDeliveryDays:Number(f.agreedDeliveryDays),notes:f.notes});toast('Bid awarded');location.href=`${page('shared/award-details.html')}?id=${a.id}`}catch(ex){toast(ex.message,'error')}}})}catch(e){err(el,e)}}
+// =============================================================
+// AI FEATURE 1 INTEGRATION LOCATION
+// This function replaces the original workPackageForm() handler.
+// The AI panel is inserted as the FIRST section inside #package-form,
+// before the hidden projectId field and the normal package form fields.
+// The AI click handler is registered after categories/edit data are loaded
+// and immediately before the existing package form submit handler.
+// =============================================================
+export async function workPackageForm() {
+  if (!requireAuth(['MAIN_CONTRACTOR'])) return;
+
+  mountApp('Work Package Form');
+
+  const root = qs('#page-root');
+  const id = idParam();
+  const projectId = idParam('projectId');
+
+  root.innerHTML =
+    pageHeader(
+      id ? 'Edit Work Package' : 'Create Work Package',
+      'Define scope, budget, deadline and SME eligibility.'
+    ) +
+    `<div class="card">
+      <form id="package-form" class="form-grid">
+
+        <!-- AI FEATURE 1: inserted before the existing work-package fields. -->
+        <section class="ai-panel span-2" id="ai-work-package-panel">
+          <div class="ai-panel-header">
+            <div>
+              <span class="ai-kicker">Hissah AI Assistant</span>
+              <h2>Generate a work-package draft</h2>
+              <p class="muted">
+                Describe the required work in simple words. The generated draft
+                will fill the form below and remain editable before you save it.
+              </p>
+            </div>
+            <span class="ai-spark" aria-hidden="true">✦</span>
+          </div>
+
+          <div class="input-group">
+            <label for="ai-brief">Brief work description</label>
+            <textarea
+              class="textarea"
+              id="ai-brief"
+              rows="4"
+              minlength="15"
+              maxlength="3000"
+              placeholder="Example: Install electrical wiring and lighting for a new office building in Muscat."
+            ></textarea>
+            <small class="help">Use at least 15 characters.</small>
+          </div>
+
+          <div class="row wrap ai-actions">
+            <button
+              type="button"
+              class="btn btn-primary ai-action-button"
+              id="generate-ai-package"
+            >
+              ✨ Generate draft with AI
+            </button>
+            <span class="help">Review every generated field before creating the package.</span>
+          </div>
+
+          <div
+            id="ai-package-status"
+            class="ai-status"
+            role="status"
+            aria-live="polite"
+          ></div>
+
+          <div id="ai-package-notes" class="ai-draft-notes"></div>
+        </section>
+        <!-- END AI FEATURE 1 -->
+
+        <input type="hidden" name="projectId" value="${projectId || ''}">
+
+        <div class="input-group span-2">
+          <label>Package title</label>
+          <input class="input" name="title" required>
+        </div>
+
+        <div class="input-group">
+          <label>Category</label>
+          <select class="select" name="categoryId" id="category-select" required>
+            <option value="">Loading categories…</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label>Location</label>
+          <input class="input" name="location" required>
+        </div>
+
+        <div class="input-group">
+          <label>Minimum budget (OMR)</label>
+          <input class="input" type="number" step="0.001" name="budgetMin" required>
+        </div>
+
+        <div class="input-group">
+          <label>Maximum budget (OMR)</label>
+          <input class="input" type="number" step="0.001" name="budgetMax" required>
+        </div>
+
+        <div class="input-group">
+          <label>Deadline</label>
+          <input class="input" type="datetime-local" name="deadline" required>
+        </div>
+
+        <div class="input-group">
+          <label>Eligibility</label>
+          <select class="select" name="eligibilityType">
+            <option>OPEN</option>
+            <option>SME_ONLY</option>
+            <option>RIYADA_PREFERRED</option>
+            <option>RIYADA_REQUIRED</option>
+          </select>
+        </div>
+
+        <div class="input-group span-2">
+          <label>Scope</label>
+          <textarea class="textarea" name="scope" required></textarea>
+        </div>
+
+        <div class="input-group span-2">
+          <label>Requirements</label>
+          <textarea class="textarea" name="requirements"></textarea>
+        </div>
+
+        <button class="btn btn-primary">${id ? 'Update' : 'Create'} package</button>
+      </form>
+    </div>`;
+
+  const packageForm = qs('#package-form');
+
+  try {
+    const categories = listOf(await api.categories.active());
+
+    qs('#category-select').innerHTML =
+      '<option value="">Choose category</option>' +
+      categories
+        .map(category => `<option value="${category.id}">${esc(category.name)}</option>`)
+        .join('');
+
+    if (id) {
+      const currentPackage = await api.packages.get(id);
+
+      Object.entries(currentPackage).forEach(([key, fieldValue]) => {
+        const input = qs(`[name=${key}]`);
+
+        if (input) {
+          input.value =
+            key === 'deadline' && fieldValue
+              ? String(fieldValue).slice(0, 16)
+              : fieldValue ?? '';
+        }
+      });
+    }
+  } catch (error) {
+    toast(error.message, 'error');
+  }
+
+  // AI FEATURE 1 EVENT HANDLER
+  // Added after category/edit-data loading and before packageForm.onsubmit.
+  const aiButton = qs('#generate-ai-package');
+  const aiBrief = qs('#ai-brief');
+  const aiStatus = qs('#ai-package-status');
+  const aiNotes = qs('#ai-package-notes');
+
+  const nullableNumber = fieldName => {
+    const rawValue = packageForm.elements[fieldName]?.value?.trim();
+
+    if (!rawValue) return null;
+
+    const parsedValue = Number(rawValue);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  };
+
+  const renderAiList = items => {
+    const values = Array.isArray(items) ? items : [];
+
+    return values.length
+      ? `<ul>${values.map(item => `<li>${esc(item)}</li>`).join('')}</ul>`
+      : '<p class="help">No additional suggestion was generated.</p>';
+  };
+
+  aiButton.onclick = async () => {
+    const brief = aiBrief.value.trim();
+
+    if (brief.length < 15) {
+      aiStatus.className = 'ai-status is-error';
+      aiStatus.textContent =
+        'Please enter a clearer description containing at least 15 characters.';
+      aiBrief.focus();
+      return;
+    }
+
+    const deadlineValue = packageForm.elements.deadline.value || null;
+
+    const requestBody = {
+      brief,
+      projectId:
+        nullableNumber('projectId') ??
+        (projectId ? Number(projectId) : null),
+      categoryId: nullableNumber('categoryId'),
+      location: packageForm.elements.location.value.trim() || null,
+      budgetMin: nullableNumber('budgetMin'),
+      budgetMax: nullableNumber('budgetMax'),
+      deadline: deadlineValue
+    };
+
+    aiButton.disabled = true;
+    aiStatus.className = 'ai-status is-loading';
+    aiStatus.textContent = 'Hissah AI is preparing an editable draft…';
+    aiNotes.innerHTML = '';
+
+    try {
+      const draft = await api.ai.generateWorkPackage(requestBody);
+
+      packageForm.elements.title.value = draft.title ?? '';
+      packageForm.elements.scope.value = draft.scope ?? '';
+      packageForm.elements.requirements.value = draft.requirements ?? '';
+
+      aiStatus.className = 'ai-status is-success';
+      aiStatus.textContent = draft.mockResponse
+        ? 'Development-mode draft generated. Review and edit it before saving.'
+        : 'AI draft generated. Review and edit it before saving.';
+
+      aiNotes.innerHTML = `
+        <div class="ai-note-grid">
+          <section>
+            <h3>Suggested deliverables</h3>
+            ${renderAiList(draft.deliverables)}
+          </section>
+          <section>
+            <h3>Evaluation criteria</h3>
+            ${renderAiList(draft.evaluationCriteria)}
+          </section>
+          <section>
+            <h3>Safety requirements</h3>
+            ${renderAiList(draft.safetyRequirements)}
+          </section>
+          <section>
+            <h3>Risk notes</h3>
+            ${renderAiList(draft.riskNotes)}
+          </section>
+        </div>
+        <p class="ai-duration">
+          Suggested duration:
+          <strong>${esc(draft.suggestedDurationDays ?? '—')} days</strong>
+        </p>`;
+    } catch (error) {
+      aiStatus.className = 'ai-status is-error';
+      aiStatus.textContent = error.message;
+      toast(error.message, 'error');
+    } finally {
+      aiButton.disabled = false;
+    }
+  };
+
+  // EXISTING NORMAL CREATE/UPDATE HANDLER
+  packageForm.onsubmit = async event => {
+    event.preventDefault();
+
+    const body = formObject(event.target);
+    body.categoryId = Number(body.categoryId);
+    body.projectId = Number(body.projectId);
+    body.budgetMin = Number(body.budgetMin);
+    body.budgetMax = Number(body.budgetMax);
+
+    try {
+      const savedPackage = id
+        ? await api.packages.update(id, body)
+        : await api.packages.create(projectId, body);
+
+      toast(id ? 'Package updated' : 'Package created');
+      location.href =
+        `${page('contractor/project-details.html')}?id=${savedPackage.projectId || projectId}`;
+    } catch (error) {
+      toast(error.message, 'error');
+    }
+  };
+}
+// =============================================================
+// AI FEATURE 2 INTEGRATION LOCATION
+// This function replaces the original compareBids() handler.
+// This frontend has no separate contractor work-package-details page.
+// Therefore, the matching panel is inserted on the Compare Bids page,
+// immediately after pageHeader(...) and before the existing #bids area.
+// The page already carries ?workPackageId=..., so no duplicate page is needed.
+// =============================================================
+export async function compareBids() {
+  if (!requireAuth(['MAIN_CONTRACTOR'])) return;
+
+  mountApp('Compare Bids');
+
+  const root = qs('#page-root');
+  const workPackageId = idParam('workPackageId');
+
+  root.innerHTML =
+    pageHeader(
+      'Compare Bids',
+      'Review submitted proposals and make a transparent award decision.'
+    ) +
+    `
+      <!-- AI FEATURE 2: inserted after pageHeader and before #bids. -->
+      <section class="ai-panel" id="ai-matching-panel">
+        <div class="ai-panel-header">
+          <div>
+            <span class="ai-kicker">Hissah AI Matching</span>
+            <h2>Find suitable subcontractors</h2>
+            <p class="muted">
+              Review verified SMEs against this work package's category,
+              location, delivery history and relevant profile information.
+            </p>
+          </div>
+          <span class="ai-spark" aria-hidden="true">✦</span>
+        </div>
+
+        <div class="row wrap ai-actions">
+          <button
+            type="button"
+            class="btn btn-primary ai-action-button"
+            id="find-ai-matches"
+          >
+            ✨ Find suitable SMEs
+          </button>
+          <span class="help">Recommendations support the decision; they do not create an award.</span>
+        </div>
+
+        <div
+          id="ai-matching-status"
+          class="ai-status"
+          role="status"
+          aria-live="polite"
+        ></div>
+
+        <div id="ai-matches-results" class="ai-match-grid"></div>
+      </section>
+      <!-- END AI FEATURE 2 -->
+
+      <div id="bids"></div>
+      <div id="modal"></div>
+    `;
+
+  // AI FEATURE 2 EVENT HANDLER
+  // Added immediately after the page HTML is mounted and before bids are loaded.
+  const matchingButton = qs('#find-ai-matches');
+  const matchingStatus = qs('#ai-matching-status');
+  const matchingResults = qs('#ai-matches-results');
+
+  const renderMatchList = items => {
+    const values = Array.isArray(items) ? items : [];
+
+    return values.length
+      ? `<ul>${values.map(item => `<li>${esc(item)}</li>`).join('')}</ul>`
+      : '<p class="help">No item was reported.</p>';
+  };
+
+  const renderMatchCard = match => {
+    const companyName =
+      match.tradingName || match.legalName || `Company #${match.companyId || ''}`;
+
+    const categoryNames = Array.isArray(match.categories)
+      ? match.categories.join(', ')
+      : 'No category information';
+
+    return `
+      <article class="ai-match-card">
+        <div class="row-between ai-match-heading">
+          <span class="ai-match-score">${esc(match.matchScore ?? 0)}% match</span>
+          ${match.mockResponse ? '<span class="badge">DEMO</span>' : ''}
+        </div>
+
+        <h3>${esc(companyName)}</h3>
+        <p class="muted">${esc(match.governorate || 'Location not provided')}</p>
+        <p class="ai-category-line">${esc(categoryNames)}</p>
+
+        <div class="ai-score-breakdown">
+          <span><strong>${esc(match.baseScore ?? 0)}</strong> platform score</span>
+          <span><strong>${esc(match.aiSemanticScore ?? 0)}</strong> AI score</span>
+          <span><strong>${esc(match.completedAwards ?? 0)}</strong> completed awards</span>
+          <span><strong>${esc(match.approvedMilestones ?? 0)}</strong> approved milestones</span>
+        </div>
+
+        <div class="ai-match-reasons">
+          <section>
+            <h4>Why it matches</h4>
+            ${renderMatchList(match.matchReasons)}
+          </section>
+          <section>
+            <h4>Possible gaps</h4>
+            ${renderMatchList(match.possibleGaps)}
+          </section>
+        </div>
+      </article>`;
+  };
+
+  matchingButton.onclick = async () => {
+    if (!workPackageId) {
+      matchingStatus.className = 'ai-status is-error';
+      matchingStatus.textContent =
+        'The workPackageId is missing from this page URL.';
+      return;
+    }
+
+    matchingButton.disabled = true;
+    matchingStatus.className = 'ai-status is-loading';
+    matchingStatus.textContent =
+      'Hissah AI is reviewing verified subcontractor profiles…';
+    matchingResults.innerHTML = '';
+
+    try {
+      const matches = listOf(await api.ai.findSubcontractorMatches(workPackageId, 5));
+
+      if (!matches.length) {
+        matchingStatus.className = 'ai-status';
+        matchingStatus.textContent =
+          'No suitable verified subcontractor matches were found.';
+        return;
+      }
+
+      matchingStatus.className = 'ai-status is-success';
+      matchingStatus.textContent = matches[0]?.mockResponse
+        ? 'Development-mode matches generated successfully.'
+        : 'AI-assisted subcontractor matches generated successfully.';
+
+      matchingResults.innerHTML = matches.map(renderMatchCard).join('');
+    } catch (error) {
+      matchingStatus.className = 'ai-status is-error';
+      matchingStatus.textContent = error.message;
+      toast(error.message, 'error');
+    } finally {
+      matchingButton.disabled = false;
+    }
+  };
+
+  // EXISTING BID TABLE AND AWARD WORKFLOW
+  const bidsElement = qs('#bids');
+  loading(bidsElement);
+
+  try {
+    const bids = listOf(await api.bids.forPackage(workPackageId));
+
+    bidsElement.innerHTML = bids.length
+      ? `<div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Subcontractor</th>
+                <th>Amount</th>
+                <th>Delivery</th>
+                <th>Proposal</th>
+                <th>Status</th>
+                <th>Decision</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bids
+                .map(
+                  bid => `<tr>
+                    <td>
+                      <strong>${esc(
+                        bid.companyName ||
+                          bid.subcontractorCompanyName ||
+                          'Company #' + (bid.subcontractorCompanyId || '')
+                      )}</strong>
+                    </td>
+                    <td>${money(bid.amount)}</td>
+                    <td>${esc(bid.deliveryDays || '—')} days</td>
+                    <td>${esc((bid.proposalText || '').slice(0, 90))}</td>
+                    <td>${badge(bid.status)}</td>
+                    <td>
+                      <button
+                        class="btn btn-secondary btn-sm bid-action"
+                        data-id="${bid.id}"
+                        data-action="shortlist"
+                      >Shortlist</button>
+                      <button
+                        class="btn btn-primary btn-sm award-bid"
+                        data-id="${bid.id}"
+                        data-amount="${bid.amount || ''}"
+                        data-days="${bid.deliveryDays || ''}"
+                      >Award</button>
+                      <button
+                        class="btn btn-danger btn-sm bid-action"
+                        data-id="${bid.id}"
+                        data-action="reject"
+                      >Reject</button>
+                    </td>
+                  </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>`
+      : empty('No bids received', 'Submitted bids will appear here.');
+
+    qsa('.bid-action').forEach(button => {
+      button.onclick = async () => {
+        const reason = prompt(`Reason for ${button.dataset.action}:`) || '';
+
+        try {
+          await api.bids.action(button.dataset.id, button.dataset.action, { reason });
+          toast(`Bid ${button.dataset.action}ed`);
+          location.reload();
+        } catch (error) {
+          toast(error.message, 'error');
+        }
+      };
+    });
+
+    qsa('.award-bid').forEach(button => {
+      button.onclick = () => {
+        qs('#modal').innerHTML = `
+          <div class="modal-backdrop">
+            <div class="modal">
+              <div class="row-between">
+                <h2>Award selected bid</h2>
+                <button class="icon-btn" id="close">×</button>
+              </div>
+
+              <form id="award-form" class="stack">
+                <input type="hidden" name="bidId" value="${button.dataset.id}">
+
+                <div class="input-group">
+                  <label>Agreed amount</label>
+                  <input
+                    class="input"
+                    name="agreedAmount"
+                    type="number"
+                    step="0.001"
+                    value="${button.dataset.amount}"
+                    required
+                  >
+                </div>
+
+                <div class="input-group">
+                  <label>Agreed delivery days</label>
+                  <input
+                    class="input"
+                    name="agreedDeliveryDays"
+                    type="number"
+                    value="${button.dataset.days}"
+                    required
+                  >
+                </div>
+
+                <div class="input-group">
+                  <label>Notes</label>
+                  <textarea class="textarea" name="notes"></textarea>
+                </div>
+
+                <button class="btn btn-primary">Confirm award</button>
+              </form>
+            </div>
+          </div>`;
+
+        qs('#close').onclick = () => {
+          qs('#modal').innerHTML = '';
+        };
+
+        qs('#award-form').onsubmit = async event => {
+          event.preventDefault();
+
+          const form = formObject(event.target);
+
+          try {
+            const award = await api.awards.create(
+              workPackageId,
+              form.bidId,
+              {
+                agreedAmount: Number(form.agreedAmount),
+                agreedDeliveryDays: Number(form.agreedDeliveryDays),
+                notes: form.notes
+              }
+            );
+
+            toast('Bid awarded');
+            location.href = `${page('shared/award-details.html')}?id=${award.id}`;
+          } catch (error) {
+            toast(error.message, 'error');
+          }
+        };
+      };
+    });
+  } catch (error) {
+    err(bidsElement, error);
+  }
+}
 export async function reports(){if(!requireAuth(['MAIN_CONTRACTOR']))return;mountApp('Reports & Analytics');const root=qs('#page-root');root.innerHTML=pageHeader('Reports & Analytics','Operational totals and recent platform activity.')+`<div id="report"></div>`;const el=qs('#report');loading(el);try{const d=await api.reports.dashboard();const metrics=[['Projects',d.totalProjects||0],['Packages',d.totalWorkPackages||0],['Open Packages',d.openWorkPackages||0],['Bids',d.totalBids||0],['Submitted Bids',d.submittedBids||0],['Active Awards',d.activeAwards||0],['Pending Milestones',d.pendingMilestones||0],['Unread Notifications',d.unreadNotifications||0]];el.innerHTML=`<div class="grid grid-4">${metrics.map(m=>`<div class="card stat"><div><small>${m[0]}</small><strong>${m[1]}</strong></div></div>`).join('')}</div><div class="grid grid-2" style="margin-top:22px"><div class="card"><h2>Activity overview</h2><div class="chart-bars">${metrics.slice(0,6).map((m,i)=>`<div class="chart-bar" style="height:${Math.max(18,Math.min(100,Number(m[1])*12+20))}%"><span>${m[0].split(' ')[0]}</span></div>`).join('')}</div></div><div class="card"><h2>What to watch</h2><div class="timeline"><div class="timeline-item"><strong>Open packages</strong><p class="muted">Close or award packages after evaluation.</p></div><div class="timeline-item"><strong>Pending milestones</strong><p class="muted">Review submitted milestone evidence.</p></div><div class="timeline-item"><strong>Unread notifications</strong><p class="muted">Check recent workflow changes.</p></div></div></div></div>`}catch(e){err(el,e)}}
 export async function smeDashboard(){if(!requireAuth(['SUBCONTRACTOR']))return;mountApp('SME Dashboard');const root=qs('#page-root');root.innerHTML=pageHeader('SME Dashboard','Discover opportunities and monitor your bidding progress.',`<a class="btn btn-primary" href="${page('public/opportunities.html')}">Browse opportunities</a>`)+`<div id="sme-stats" class="grid grid-4"></div><div class="grid grid-2" style="margin-top:22px"><section class="card"><div class="row-between"><h2>Open opportunities</h2><a href="${page('public/opportunities.html')}" class="text-primary">View all</a></div><div id="sme-opportunities"></div></section><section class="card"><h2>My recent bids</h2><div id="sme-bids"></div></section></div>`;try{const [r,o,b]=await Promise.all([api.reports.dashboard(),api.packages.search({status:'OPEN',page:0,size:4}),api.bids.mine(0,5)]);qs('#sme-stats').innerHTML=[['My Bids',r.totalBids],['Submitted',r.submittedBids],['Active Awards',r.activeAwards],['Pending Milestones',r.pendingMilestones]].map((m,i)=>`<div class="card stat"><div><small>${m[0]}</small><strong>${m[1]??0}</strong></div><div class="stat-icon">${['▤','✎','✓','◷'][i]}</div></div>`).join('');const ol=listOf(o);qs('#sme-opportunities').innerHTML=ol.length?ol.map(x=>`<div class="notification"><div class="notification-icon">⌕</div><div><a href="${page('public/opportunity-details.html')}?id=${x.id}"><strong>${esc(x.title)}</strong></a><div class="help">${money(x.budgetMax)} · ${date(x.deadline)}</div></div></div>`).join(''):empty('No open packages','Check again later.');const bl=listOf(b);qs('#sme-bids').innerHTML=bl.length?bl.map(x=>`<div class="notification"><div class="notification-icon">▤</div><div><strong>${esc(x.workPackageTitle||'Bid #'+x.id)}</strong><div>${badge(x.status)} · ${money(x.amount)}</div></div></div>`).join(''):empty('No bids yet','Submit your first bid from an open opportunity.')}catch(e){toast(e.message,'error')}}
 export async function bidForm(){if(!requireAuth(['SUBCONTRACTOR']))return;mountApp('Submit Bid');const root=qs('#page-root'),workPackageId=idParam('workPackageId'),bidId=idParam('id');root.innerHTML=pageHeader(bidId?'Edit Draft Bid':'Submit Your Bid','Provide a clear commercial proposal and supporting documents.')+`<div class="grid grid-3"><section class="card" style="grid-column:span 2"><form id="bid-form" class="form-grid"><div class="input-group"><label>Bid amount (OMR)</label><input class="input" type="number" step="0.001" name="amount" required></div><div class="input-group"><label>Delivery days</label><input class="input" type="number" min="1" name="deliveryDays" required></div><div class="input-group span-2"><label>Proposal</label><textarea class="textarea" name="proposalText" required></textarea></div><div class="input-group span-2"><label>Supporting document</label><input class="input" type="file" name="documents"><span class="help">PDF or document up to the backend upload limit.</span></div><div class="input-group"><label>Document type</label><select class="select" name="documentTypes"><option>TECHNICAL_PROPOSAL</option><option>COMPANY_PROFILE</option><option>OTHER</option></select></div><div class="row"><button type="button" class="btn btn-secondary" id="save-draft">Save draft</button><button class="btn btn-primary">Submit bid</button></div></form></section><aside class="card"><h3>Before submitting</h3><ul><li>Confirm company verification.</li><li>Review scope and deadline.</li><li>Use OMR and realistic delivery days.</li><li>A company may have only one active bid per package.</li></ul></aside></div>`;if(bidId)try{const d=await api.bids.get(bidId);['amount','deliveryDays','proposalText'].forEach(k=>qs(`[name=${k}]`).value=d[k]??'')}catch(e){toast(e.message,'error')}const submit=async draft=>{const form=qs('#bid-form'),fd=new FormData(form);if(!form.documents.files.length)fd.delete('documents');try{const d=bidId?await api.bids.update(bidId,fd):await api.bids.create(workPackageId,fd,draft);if(!draft&&d.status==='DRAFT')await api.bids.action(d.id,'submit');toast(draft?'Draft saved':'Bid submitted');location.href=page('subcontractor/my-bids.html')}catch(e){toast(e.message,'error')}};qs('#bid-form').onsubmit=e=>{e.preventDefault();submit(false)};qs('#save-draft').onclick=()=>submit(true)}
